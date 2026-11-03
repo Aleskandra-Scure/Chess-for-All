@@ -27,6 +27,7 @@
       <button data-mode="learn" aria-pressed="false"><span aria-hidden="true">&#127891;</span> <span data-i18n="modeLearn">Learn</span></button>
     </div>
     <div class="header-tools">
+      <button id="aboutButton" class="about-btn" data-i18n="aboutButton">About</button>
       <button id="sound" class="sound" aria-pressed="true">🔊</button>
     </div>
   </header>
@@ -182,16 +183,32 @@
 
       <div id="playControls" class="controls">
         <label>
+          <span data-i18n="opponent">Opponent</span>
+          <select id="opponent">
+            <option value="computer" data-i18n="opponentComputer">Computer</option>
+            <option value="friend" data-i18n="opponentFriend">Friend (same device)</option>
+          </select>
+        </label>
+        <label id="colourRow">
           <span data-i18n="youPlay">You play</span>
           <select id="colour">
             <option value="w" data-i18n="white">White</option>
             <option value="b" data-i18n="black">Black</option>
           </select>
         </label>
-        <label>
+        <label id="levelRow">
           <span><span data-i18n="level">Computer level</span>: <b id="levelValue">2</b></span>
           <input id="level" type="range" min="1" max="10" step="1" value="2">
         </label>
+        <div id="helpForRow" class="setting" hidden>
+          <span data-i18n="helpFor">Help for</span>
+          <div class="segmented" role="group">
+            <button data-help-for="w" data-i18n="helpForNames.w">White</button>
+            <button data-help-for="b" data-i18n="helpForNames.b">Black</button>
+            <button data-help-for="both" data-i18n="helpForNames.both">Both</button>
+            <button data-help-for="none" data-i18n="helpForNames.none">None</button>
+          </div>
+        </div>
         <div class="setting">
           <span><span data-i18n="helpLevel">Help level</span>: <b id="helpName"></b></span>
           <div id="helpLevel" class="segmented" role="group">
@@ -205,6 +222,14 @@
           <input id="barToggle" type="checkbox" checked>
           <span data-i18n="advantageBar">Advantage bar</span>
         </label>
+        <label id="flipRow" class="switch" hidden>
+          <input id="flipToggle" type="checkbox">
+          <span data-i18n="flipBoard">Flip board after each move</span>
+        </label>
+        <div id="friendButtons" class="friend-buttons" hidden>
+          <button id="resign" class="secondary-btn"><span aria-hidden="true">&#9873;</span> <span data-i18n="resign">Resign</span></button>
+          <button id="agreeDraw" class="secondary-btn"><span aria-hidden="true">&#129309;</span> <span data-i18n="agreeDraw">Draw</span></button>
+        </div>
         <button id="newGame" class="primary" data-i18n="newGame">New game</button>
       </div>
 
@@ -239,6 +264,17 @@
         <button id="pickerClose" class="picker-close">✕</button>
       </div>
       <div id="coachCards" class="coach-cards"></div>
+    </div>
+  </div>
+
+  <div id="about" class="picker" hidden>
+    <div id="aboutBackdrop" class="picker-backdrop"></div>
+    <div class="picker-card about-card" role="dialog" aria-labelledby="aboutTitle">
+      <div class="picker-head">
+        <h2 id="aboutTitle" data-i18n="about.title">About Chess for All</h2>
+        <button id="aboutClose" class="picker-close">✕</button>
+      </div>
+      <div id="aboutBody" class="about-body"></div>
     </div>
   </div>
 

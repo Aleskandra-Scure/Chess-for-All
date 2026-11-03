@@ -70,6 +70,79 @@ export const STRINGS = {
     footer: 'Free for everyone. Nothing is saved and nothing is sent anywhere.',
     credits: 'Credits and licences',
 
+    // Two players on one device
+    opponent: 'Opponent',
+    opponentComputer: 'Computer',
+    opponentFriend: 'Friend (same device)',
+    helpFor: 'Help for',
+    helpForNames: { w: 'White', b: 'Black', both: 'Both', none: 'None' },
+    flipBoard: 'Flip board after each move',
+    whiteToMove: 'White to move',
+    blackToMove: 'Black to move',
+    whiteWins: 'Checkmate — White wins!',
+    blackWins: 'Checkmate — Black wins!',
+    resign: 'Resign',
+    agreeDraw: 'Draw',
+    whiteResigned: 'White resigned — Black wins.',
+    blackResigned: 'Black resigned — White wins.',
+    drawAgreed: 'Draw agreed.',
+    barWhiteWinning: 'White is winning',
+    barBlackWinning: 'Black is winning',
+
+    // About
+    aboutButton: 'About',
+    about: {
+      title: 'About Chess for All',
+      sections: [
+        {
+          heading: 'What is Chess for All?',
+          paragraphs: [
+            'Chess for All is a free app for children to learn chess. You can play against the computer or a friend, solve puzzles and follow short lessons, with a friendly coach to help.',
+          ],
+        },
+        {
+          heading: 'Your privacy',
+          list: [
+            'No accounts, no adverts and no tracking.',
+            'Nothing is saved: close the page and everything starts fresh.',
+            'Nothing is sent anywhere. Everything, including the chess engine, runs on this device.',
+            'The coach’s voice uses only voices built into this device.',
+          ],
+        },
+        {
+          heading: 'Works offline',
+          paragraphs: [
+            'After the first visit, the app keeps its own files on this device, so it also works without the internet.',
+          ],
+        },
+        {
+          heading: 'Add it to your home screen',
+          list: [
+            'iPhone or iPad: open the app in Safari, tap Share, then Add to Home Screen.',
+            'Android: open the app in Chrome, tap the menu ⋮, then Add to Home screen or Install app.',
+          ],
+        },
+        {
+          heading: 'Thanks and licences',
+          paragraphs: ['Chess for All is built with these free projects. Thank you to everyone who made them!'],
+          credits: [
+            { name: 'Stockfish (Stockfish.js 19)', what: 'The chess engine that plays and checks the moves.', licence: 'GPL-3.0' },
+            { name: 'Chessground', what: 'The chessboard, by the lichess.org authors.', licence: 'GPL-3.0-or-later' },
+            { name: 'cburnett pieces', what: 'The chess pieces, by Colin M.L. Burnett.', licence: 'GPL-2.0-or-later' },
+            { name: 'chess.js', what: 'The rules of chess, by Jeff Hlywa.', licence: 'BSD-2-Clause' },
+            { name: 'Lichess puzzle database', what: 'The puzzles, from database.lichess.org.', licence: 'CC0' },
+            { name: 'Lichess chess openings', what: 'The names of the openings.', licence: 'CC0-1.0' },
+          ],
+          links: [{ text: 'Full credits and licences', href: './CREDITS.md' }],
+        },
+        {
+          heading: 'Open source',
+          paragraphs: ['Chess for All is open source under the GNU General Public License, version 3 (GPL-3.0). You can read, change and share the code.'],
+          links: [{ text: 'Source code on GitHub', href: 'https://github.com/Aleksandra-Scure/Chess-for-All' }],
+        },
+      ],
+    },
+
     // Puzzles
     pzChooseLevel: 'Choose a level',
     pzLevel: 'Level',
@@ -461,6 +534,9 @@ export const STRINGS = {
           smotheredMate: 'The king was smothered by its own pieces.',
           doubleCheck: 'Two pieces gave check at once, so the king had to move.',
         },
+
+        // Two players: when both sides had help
+        friendWin: ['{colour} wins — well played, both of you!', 'A win for {colour}. Great game, both of you!'],
 
         // Learn
         learnWelcome: ['Pick a lesson. Each one takes a minute or two.', 'Choose a lesson to start. Have fun!'],

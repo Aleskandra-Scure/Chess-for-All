@@ -4,6 +4,7 @@ import { STRINGS, LANG } from './i18n.js';
 import { COACHES, DEFAULT_COACH, MOODS, coachById, coachImage } from './coaches.js';
 import { createPuzzles } from './puzzles.js';
 import { createLearn } from './learn.js';
+import { initAbout } from './about.js';
 import { openingsReady, openingOf, openingFamily } from './openings.js';
 import { engineReady, judgeMove, computerMove, evaluate, hintFor, piecesInDanger, uciToMove, PIECE } from './analysis.js';
 import * as lines from './coach-lines.js';
@@ -15,7 +16,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let level = 2;
 let helpLevel = 2;
 let showBar = true;
-let playerColour = 'w'; // colour for the current game
+let playerColour = 'w'; // colour for the current game; with a friend, the side to move
+let vsFriend = false; // the current game is two players on this device
+let helpFor = 'both'; // with a friend: help for 'w', 'b', 'both' or 'none'
+let flipBoard = true; // with a friend: the board turns to the side to move (on each time the page opens)
 let coach = coachById(DEFAULT_COACH);
 let mode = 'play'; // 'play', 'puzzles' or 'learn'
 let engineOk = null; // null while Stockfish is loading, then true or false
@@ -31,6 +35,10 @@ let gamesStarted = 0;
 const t = (key) => key.split('.').reduce((o, k) => o?.[k], STRINGS[LANG]);
 const colourName = (c) => (c === 'w' ? 'white' : 'black');
 const coachName = (c) => t('coaches')[c.id].name;
+
+// Against the computer the player always gets the chosen help; with a friend only the chosen side(s).
+const helped = (c) => !vsFriend || helpFor === 'both' || helpFor === c;
+const help = () => (helped(playerColour) ? helpLevel : 0);
 
 function applyTexts() {
   document.documentElement.lang = t('htmlLang');
@@ -291,7 +299,7 @@ function dests() {
 const cg = Chessground($('board'), {
   fen: chess.fen(),
   orientation: colourName(playerColour),
-  movable: { free: false, color: undefined, showDests: true, events: { after: onUserMove } },
+  movable: { free: false, color: undefined, showDests: true, events: { after: (orig, dest) => (vsFriend ? onFriendMove(orig, dest) : onUserMove(orig, dest)) } },
   premovable: { enabled: false },
   highlight: { lastMove: true, check: true },
   animation: { enabled: true, duration: 250 },
@@ -318,8 +326,12 @@ function refreshStatus() {
   if (engineOk === false) s = t('engineFailed');
   else if (engineOk === null) s = t('engineLoading');
   else if (endText) s = t(endText);
+  else if (gameActive && vsFriend) s = t(chess.turn() === 'w' ? 'whiteToMove' : 'blackToMove');
   else if (gameActive) s = chess.turn() === playerColour ? t('yourMove') : t('thinking');
   $('status').textContent = s;
+  const turnShown = vsFriend && gameActive && !endText && engineOk === true;
+  $('status').classList.toggle('turn-w', turnShown && chess.turn() === 'w');
+  $('status').classList.toggle('turn-b', turnShown && chess.turn() === 'b');
   refreshOpening();
   refreshMood();
   refreshHintButton();
@@ -366,7 +378,7 @@ function bookMoves(o) {
 // Help 2–3: the coach says a few words once per new opening. The first time it waits until move 3
 // (or until the game leaves the book), so it does not talk after every early move.
 function maybeTalkOpening() {
-  if (helpLevel < 2 || !gameActive) return;
+  if (help() < 2 || !gameActive) return;
   const o = currentOpening();
   if (!o || openingsTalked.has(o.family)) return;
   if (openingsTalked.size === 0 && o.inBook && o.ply < 6) return;
@@ -405,7 +417,7 @@ function refreshLegend() {
     return any;
   };
   show($('helpLegend'));
-  $('helpLegend').hidden = helpLevel < 2;
+  $('helpLegend').hidden = help() < 2;
   $('hintLegend').hidden = !show($('hintLegend'));
 }
 
@@ -418,17 +430,23 @@ function refreshHelpControls() {
   refreshShowBest();
 }
 
+// After the help level (or, with a friend, the side that gets help) changes.
+function applyHelp() {
+  if (help() < 2) {
+    hideBadge();
+    dangerArrows = [];
+    drawShapes();
+  }
+  if (help() < 3) clearTurnHelp();
+  else if (!turn) startTurnHelp();
+  refreshHelpControls();
+  refreshHintButton();
+}
+
 document.querySelectorAll('[data-help]').forEach((b) =>
   b.addEventListener('click', () => {
     helpLevel = Number(b.dataset.help);
-    if (helpLevel < 2) {
-      hideBadge();
-      dangerArrows = [];
-      drawShapes();
-    }
-    if (helpLevel < 3) clearTurnHelp();
-    else if (!turn) startTurnHelp();
-    refreshHelpControls();
+    applyHelp();
   }),
 );
 
@@ -437,23 +455,33 @@ const GRADE = {
   book: '📖', best: '!!', checkmate: '!!', good: '!', inaccuracy: '?!', mistake: '?', blunder: '??',
 };
 
+let badgeMoment = null; // the move the badge belongs to, so it can move with the board when it turns
+
 function showBadge(moment) {
   const mark = GRADE[moment.category];
-  if (!mark || helpLevel < 2) return hideBadge();
-  const file = 'abcdefgh'.indexOf(moment.to[0]);
-  const rank = Number(moment.to[1]);
-  const col = playerColour === 'w' ? file : 7 - file;
-  const row = playerColour === 'w' ? 8 - rank : rank - 1;
+  if (!mark || help() < 2) return hideBadge();
+  badgeMoment = moment;
+  placeBadge();
   const b = $('badge');
-  b.style.left = `${(col + 1) * 12.5}%`;
-  b.style.top = `${row * 12.5}%`;
   b.textContent = mark;
   b.className = `badge ${moment.category === 'checkmate' ? 'best' : moment.category}`;
   b.hidden = false;
 }
 
+function placeBadge() {
+  if (!badgeMoment) return;
+  const white = cg.state.orientation === 'white';
+  const file = 'abcdefgh'.indexOf(badgeMoment.to[0]);
+  const rank = Number(badgeMoment.to[1]);
+  const col = white ? file : 7 - file;
+  const row = white ? 8 - rank : rank - 1;
+  $('badge').style.left = `${(col + 1) * 12.5}%`;
+  $('badge').style.top = `${row * 12.5}%`;
+}
+
 function hideBadge() {
   $('badge').hidden = true;
+  badgeMoment = null;
 }
 
 // Red arrows from the opponent's piece to the player's piece it can win, and a short warning about
@@ -493,11 +521,17 @@ function renderBar() {
   $('evalBar').hidden = !showBar;
   $('evalText').hidden = !showBar;
   $('barToggle').checked = showBar;
-  $('evalBar').classList.toggle('flip', playerColour === 'b');
+  $('evalBar').classList.toggle('flip', cg.state.orientation === 'black');
   const fill = $('evalFill');
   fill.style.height = '';
   fill.style.width = '';
   fill.style.setProperty(matchMedia('(max-width: 600px)').matches ? 'width' : 'height', `${barWhite}%`);
+  if (vsFriend) {
+    const key = barWhite >= 60 ? 'barWhiteWinning' : barWhite <= 40 ? 'barBlackWinning' : 'barEven';
+    $('evalText').textContent = t(key);
+    $('evalText').className = 'eval-text';
+    return;
+  }
   const mine = playerColour === 'w' ? barWhite : 100 - barWhite;
   const key = mine >= 60 ? 'barWinning' : mine <= 40 ? 'barLosing' : 'barEven';
   $('evalText').textContent = t(key);
@@ -525,7 +559,7 @@ let turn = null; // { fen, circles, lines, shown, timer }
 
 function startTurnHelp() {
   clearTurnHelp();
-  if (helpLevel < 3 || !hintAllowed()) return;
+  if (help() < 3 || !hintAllowed()) return;
   const fen = chess.fen();
   const id = gameId;
   const me = { fen, circles: [], lines: null, shown: false, timer: null };
@@ -574,7 +608,7 @@ function clearTurnHelp() {
 }
 
 function refreshShowBest() {
-  $('showBest').hidden = helpLevel < 3;
+  $('showBest').hidden = help() < 3;
   $('showBest').disabled = !turn || turn.shown || !hintAllowed();
 }
 
@@ -611,7 +645,7 @@ function placePause() {
   // The green "better move" arrow matters most once it is shown.
   const green = arrows.filter((a) => a.brush === 'green');
   const ranks = (green.length ? green : arrows).flatMap((a) => [a.orig[1], a.dest[1]]).map(Number);
-  const fromBottom = (r) => (playerColour === 'w' ? r : 9 - r);
+  const fromBottom = (r) => (cg.state.orientation === 'white' ? r : 9 - r);
   const low = ranks.length && ranks.filter((r) => fromBottom(r) <= 4).length > ranks.length / 2;
   $('pause').classList.toggle('top', Boolean(low));
 }
@@ -656,7 +690,7 @@ let hintUsed = null; // 'question' or 'shown' for the move the player is about t
 let hintLoading = false;
 
 function hintAllowed() {
-  return engineOk === true && gameActive && !busy && !pause && chess.turn() === playerColour;
+  return engineOk === true && gameActive && !busy && !pause && chess.turn() === playerColour && helped(playerColour);
 }
 
 function refreshHintButton() {
@@ -718,12 +752,46 @@ const playerMoves = () => chess.history({ verbose: true }).filter((m) => m.color
 
 function refreshUndoButton() {
   const thinking = busy && !pause;
-  $('undo').disabled = !(gameActive || gameOver) || thinking || playerMoves().length === 0;
+  const moves = vsFriend ? chess.history().length : playerMoves().length;
+  $('undo').disabled = !(gameActive || gameOver) || thinking || moves === 0;
+}
+
+// With a friend: takes back one move (whoever played it). No limit.
+function undoFriendMove() {
+  if (pause) {
+    pause.moment.retried = true;
+    endPause('abort');
+    chess.undo();
+  } else {
+    const undone = chess.undo();
+    const m = moments.findLast((x) => !x.retried && x.san === undone.san && x.moveNumber === chess.moveNumber());
+    if (m) m.retried = true;
+  }
+  if (gameOver) {
+    gameOver = false;
+    gameActive = true;
+    endText = '';
+  }
+  busy = false;
+  hintUsed = null;
+  hideBadge();
+  dangerArrows = [];
+  warnedAbout = new Set();
+  setArrows([]);
+  clearHint();
+  const prev = chess.history({ verbose: true }).at(-1);
+  cg.set({ lastMove: prev ? [prev.from, prev.to] : undefined });
+  playerColour = chess.turn();
+  turnBoard();
+  syncBoard();
+  playerTurnStarts();
+  refreshFriendControls();
 }
 
 // Takes back the player's last move and the computer's answer to it (if it was played). No limit.
 $('undo').addEventListener('click', () => {
   if ($('undo').disabled) return;
+  if (vsFriend) return undoFriendMove();
   if (pause) {
     // Paused after a mistake: the computer has not answered yet.
     pause.moment.retried = true;
@@ -908,6 +976,198 @@ async function onUserMove(orig, dest) {
   }
 }
 
+// ---------- Two players on one device ----------
+
+// The side at the bottom: the player against the computer; with a friend White, or the side to move.
+function boardSide() {
+  if (!vsFriend) return colourName(playerColour);
+  return flipBoard ? colourName(chess.turn()) : 'white';
+}
+
+// Turns the board if needed; the bar, the badge and the pause bubble follow.
+function turnBoard() {
+  if (cg.state.orientation === boardSide()) return;
+  cg.set({ orientation: boardSide() });
+  renderBar();
+  placeBadge();
+}
+
+// The next player's turn: the board turns to them (after the move has been seen) and their help starts.
+async function friendTurn(lastMove) {
+  const id = gameId;
+  if (flipBoard && cg.state.orientation !== colourName(chess.turn())) {
+    busy = true;
+    syncBoard(lastMove);
+    await sleep(600);
+    if (id !== gameId) return;
+  }
+  busy = false;
+  playerColour = chess.turn();
+  setArrows([]);
+  turnBoard();
+  syncBoard(lastMove);
+  playerTurnStarts();
+}
+
+// A move in a game with a friend. The side that gets help is judged as against the computer
+// (grade, comments, danger warnings, pause after a mistake); the other side just plays.
+async function onFriendMove(orig, dest) {
+  const piece = chess.get(orig);
+  let promotion = '';
+  if (piece?.type === 'p' && (dest[1] === '8' || dest[1] === '1')) {
+    promotion = await choosePromotion();
+    if (!promotion) {
+      const prev = chess.history({ verbose: true }).at(-1);
+      cg.set({ lastMove: prev ? [prev.from, prev.to] : undefined });
+      syncBoard();
+      return;
+    }
+  }
+  const fenBefore = chess.fen();
+  const id = gameId;
+  const usedHint = hintUsed;
+  const level = help();
+  hintUsed = null;
+  clearHint();
+  clearTurnHelp();
+  hideBadge();
+  dangerArrows = [];
+  chess.move({ from: orig, to: dest, promotion: promotion || undefined });
+
+  busy = true;
+  setArrows([]);
+  syncBoard([orig, dest]);
+
+  let r = null;
+  if (level > 0) {
+    try {
+      r = await judgeMove(fenBefore, orig + dest + promotion, uciLine());
+    } catch { /* no judgement: the game goes on */ }
+    if (id !== gameId) return;
+  }
+  if (r) {
+    if (usedHint) r.moment.hint = usedHint;
+    moments.push(r.moment);
+    showBadge(r.moment);
+    if (r.moment.category === 'checkmate') react('celebrate');
+    else if (level >= 2) react(['best', 'good', 'book'].includes(r.moment.category) ? 'happy' : 'worried');
+    if (showBar) {
+      analyses.set(r.fenAfter, Promise.resolve({ evalWhite: r.evalWhite, lines: [] }));
+      setBar(r.evalWhite);
+    }
+  }
+  const over = localGameOver();
+  if (over) {
+    busy = false;
+    if (r && level >= 2 && r.moment.worthComment) coachSays(lines.praise(coach.id, r.moment));
+    return endGame(over, Boolean(r) && level >= 2);
+  }
+
+  if (r) {
+    const isMistake = r.moment.category === 'blunder' || r.moment.category === 'mistake';
+    const gentle = level === 1;
+    const pauses = level >= 2 ? isMistake : gentle && r.moment.category === 'blunder';
+    let comment = null;
+    if (gentle && pauses) {
+      comment = lines.gentle(coach.id);
+      speak(comment);
+    } else if (level >= 2 && r.moment.worthComment) {
+      comment = coachSays(isMistake ? lines.mistake(coach.id, r.moment) : lines.praise(coach.id, r.moment), isMistake ? 'warn' : '');
+    }
+    const danger = level >= 2 && r.threats?.length > 0;
+    if (danger) showDanger(r.threats, Boolean(comment));
+    else warnedAbout = new Set();
+
+    if (pauses) {
+      const choice = await pauseForMistake(r.moment, comment, gentle);
+      if (choice === 'abort' || id !== gameId) return;
+      if (choice === 'retry') {
+        r.moment.retried = true;
+        chess.undo();
+        hideBadge();
+        dangerArrows = [];
+        setArrows(arrows.filter((a) => a.brush === 'green'));
+        busy = false;
+        const prev = chess.history({ verbose: true }).at(-1);
+        cg.set({ lastMove: prev ? [prev.from, prev.to] : undefined });
+        syncBoard();
+        playerTurnStarts();
+        return;
+      }
+    } else if (!comment && !danger) {
+      maybeTalkOpening();
+    }
+  }
+  friendTurn([orig, dest]);
+}
+
+// The coach's words at the end, only for the side(s) that had help.
+function friendReview(winner) {
+  const sides = ['w', 'b'].filter(helped);
+  if (helpFor === 'none' || !sides.length) return;
+  if (sides.length === 2) {
+    if (winner) react('celebrate', 6000);
+    coachSays(winner ? lines.line(coach.id, 'friendWin', { colour: t(colourName(winner)) }) : lines.line(coach.id, 'draw'));
+    return;
+  }
+  const side = sides[0];
+  const result = !winner ? 'draw' : winner === side ? 'win' : 'loss';
+  const counts = { best: 0, mistake: 0, blunder: 0, total: 0 };
+  for (const m of moments) {
+    if (m.retried || m.playerColour !== colourName(side)) continue;
+    counts.total += 1;
+    if (counts[m.category] !== undefined) counts[m.category] += 1;
+  }
+  if (result === 'win') react('celebrate', 6000);
+  coachSays(lines.review(coach.id, result, counts, helpLevel));
+}
+
+// Resign (the side to move gives up) or a draw both players agree on.
+function finishByChoice(key, winner) {
+  if (!vsFriend || !gameActive) return;
+  gameId += 1;
+  endPause('abort');
+  gameActive = false;
+  gameOver = false;
+  busy = false;
+  clearTurnHelp();
+  clearHint();
+  setArrows([]);
+  endText = key;
+  syncBoard();
+  refreshFriendControls();
+  friendReview(winner);
+}
+
+$('resign').addEventListener('click', () => {
+  const loser = chess.turn();
+  finishByChoice(loser === 'w' ? 'whiteResigned' : 'blackResigned', loser === 'w' ? 'b' : 'w');
+});
+$('agreeDraw').addEventListener('click', () => finishByChoice('drawAgreed', null));
+
+// Settings for the next game (opponent) and for the game on the board (help for, flip).
+function refreshFriendControls() {
+  const friendChosen = $('opponent').value === 'friend';
+  $('colourRow').hidden = friendChosen;
+  $('levelRow').hidden = friendChosen;
+  $('helpForRow').hidden = !friendChosen;
+  $('flipRow').hidden = !friendChosen;
+  $('friendButtons').hidden = !(vsFriend && gameActive);
+  document.querySelectorAll('[data-help-for]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.helpFor === helpFor)));
+  $('flipToggle').checked = flipBoard;
+}
+
+$('opponent').addEventListener('change', refreshFriendControls);
+document.querySelectorAll('[data-help-for]').forEach((b) => b.addEventListener('click', () => {
+  helpFor = b.dataset.helpFor;
+  refreshFriendControls();
+  if (vsFriend && gameActive && !busy) applyHelp();
+}));
+$('flipToggle').addEventListener('change', () => {
+  flipBoard = $('flipToggle').checked;
+  if (vsFriend && !busy) turnBoard();
+});
+
 async function computerStarts() {
   const id = gameId;
   busy = true;
@@ -938,11 +1198,14 @@ async function endGame(over, delay = false) {
   clearTurnHelp();
   if (showBar) setBar(over.reason === 'checkmate' ? (over.winner === 'w' ? 10000 : -10000) : 0);
   const result = resultFor(over);
-  endText = over.reason === 'checkmate' ? (result === 'win' ? 'youWon' : 'youLost') : over.reason === 'stalemate' ? 'stalemate' : 'draw';
+  if (vsFriend) endText = over.reason === 'checkmate' ? (over.winner === 'w' ? 'whiteWins' : 'blackWins') : over.reason === 'stalemate' ? 'stalemate' : 'draw';
+  else endText = over.reason === 'checkmate' ? (result === 'win' ? 'youWon' : 'youLost') : over.reason === 'stalemate' ? 'stalemate' : 'draw';
   syncBoard();
+  if (vsFriend) refreshFriendControls();
   const id = gameId;
   if (delay) await sleep(2500); // after the "Checkmate!" praise has been read
   if (id !== gameId) return;
+  if (vsFriend) return friendReview(over.winner);
   if (result === 'win') react('celebrate', 6000);
   coachSays(lines.review(coach.id, result, gameCounts(), helpLevel));
 }
@@ -960,7 +1223,8 @@ function newGame() {
   hintUsed = null;
   clearHint();
 
-  playerColour = $('colour').value;
+  vsFriend = $('opponent').value === 'friend';
+  playerColour = vsFriend ? 'w' : $('colour').value;
   chess = new Chess();
   moments = [];
   openingsTalked = new Set();
@@ -968,14 +1232,16 @@ function newGame() {
   endText = '';
   gameActive = true;
   busy = false;
-  cg.set({ orientation: colourName(playerColour), lastMove: undefined });
+  cg.set({ orientation: boardSide(), lastMove: undefined });
   syncBoard();
   barWhite = 50;
   renderBar();
+  refreshFriendControls();
+  refreshHelpControls();
 
   if (gamesStarted++ > 0) addDivider();
-  coachSays(lines.greeting(coach.id));
-  if (playerColour === 'b') computerStarts();
+  if (!vsFriend || helpFor !== 'none') coachSays(lines.greeting(coach.id));
+  if (!vsFriend && playerColour === 'b') computerStarts();
   else playerTurnStarts();
 }
 
@@ -1042,6 +1308,8 @@ $('level').addEventListener('input', () => {
 $('newGame').addEventListener('click', newGame);
 
 applyTexts();
+refreshFriendControls();
+initAbout(t);
 
 // Offline: the service worker keeps the page's own files so it opens without internet.
 if ('serviceWorker' in navigator && window.isSecureContext) {
@@ -1068,4 +1336,7 @@ window.chessForAll = {
   get moments() { return moments; },
   get puzzles() { return puzzles.state; },
   get learn() { return learn.state; },
+  get vsFriend() { return vsFriend; },
+  get orientation() { return cg.state.orientation; },
+  get status() { return $('status').textContent; },
 };
