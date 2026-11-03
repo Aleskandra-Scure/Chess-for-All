@@ -21,8 +21,9 @@ play against the computer with a friendly coach, or solve chess puzzles.
 | Puzzle level | Lichess puzzle rating | Starts at |
 |---|---|---|
 | Easy | 400–799 | 600 |
-| Medium | 800–1199 | 1000 |
-| Hard | 1200–1599 | 1400 |
+| Medium | 900–1299 | 1100 |
+| Hard | 1400–1799 | 1600 |
+| Grandmaster | 1900–2499 | 2200 |
 
 After a puzzle solved without help the target moves up 50 points, after one solved with a hint up
 20, and after a missed one (wrong move, the move shown, or *Show solution*) down 50. It stays within

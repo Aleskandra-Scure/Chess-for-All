@@ -73,11 +73,12 @@ export const STRINGS = {
     // Puzzles
     pzChooseLevel: 'Choose a level',
     pzLevel: 'Level',
-    pzLevels: { easy: 'Easy', medium: 'Medium', hard: 'Hard' },
+    pzLevels: { easy: 'Easy', medium: 'Medium', hard: 'Hard', grandmaster: 'Grandmaster' },
     pzLevelAbout: {
       easy: 'Just starting out',
       medium: 'You know the tricks',
       hard: 'Ready for a challenge',
+      grandmaster: 'Long, tough puzzles for experts',
     },
     pzLoading: 'Finding a puzzle…',
     pzNone: 'No puzzles found. Try another theme.',
@@ -99,6 +100,9 @@ export const STRINGS = {
       mixed: 'Mixed',
       mateIn1: 'Mate in 1',
       mateIn2: 'Mate in 2',
+      mateIn3: 'Mate in 3',
+      mateIn4: 'Mate in 4',
+      mateIn5: 'Mate in 5 or more',
       fork: 'Forks',
       hangingPiece: 'Free pieces',
       pin: 'Pins',

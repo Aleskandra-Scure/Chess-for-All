@@ -1,7 +1,7 @@
 // Service worker: keeps the page's own files so Chess for All opens without internet after the
 // first visit. It stores only these files (no user data) and never contacts any other address.
 // After changing any file of the site, raise VERSION so devices pick up the new files.
-const VERSION = 'chess-for-all-v2';
+const VERSION = 'chess-for-all-v4';
 
 const FILES = [
   './',

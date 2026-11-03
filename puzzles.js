@@ -1,7 +1,7 @@
 // Puzzle mode: its own board, buttons and coach messages. The game in the Play tab is left untouched.
 // Puzzles come from data/puzzles.json (Lichess puzzle database). There is no rating, nothing is
-// saved: the child picks Easy, Medium or Hard, and while the page is open the puzzles get a little
-// harder after a solved one and a little easier after a missed one.
+// saved: the child picks Easy, Medium, Hard or Grandmaster, and while the page is open the puzzles get
+// a little harder after a solved one and a little easier after a missed one.
 import { Chessground } from './vendor/chessground/chessground.js';
 import { Chess } from './vendor/chess.js/chess.js';
 import { moveFacts, PIECE } from './analysis.js';
@@ -11,15 +11,17 @@ const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const colourName = (c) => (c === 'w' ? 'white' : 'black');
 
-// Lichess puzzle ratings for each level. The target starts in the middle and moves inside its level.
+// Lichess puzzle ratings for each level, 100 points apart. The target starts in the middle and moves
+// inside its level. Grandmaster puzzles have solutions of 3 to 6 of the player's moves.
 export const LEVELS = {
   easy: { min: 400, max: 800, start: 600 },
-  medium: { min: 800, max: 1200, start: 1000 },
-  hard: { min: 1200, max: 1600, start: 1400 },
+  medium: { min: 900, max: 1300, start: 1100 },
+  hard: { min: 1400, max: 1800, start: 1600 },
+  grandmaster: { min: 1900, max: 2500, start: 2200 },
 };
 const STEP = { clean: 50, hint: 20, failed: -50 }; // how far the target moves after each puzzle
 const WINDOW = 100; // puzzles within this distance of the target
-const THEME_FILTERS = ['mateIn1', 'mateIn2', 'fork', 'hangingPiece', 'pin', 'skewer', 'discoveredAttack', 'backRankMate', 'promotion', 'trappedPiece'];
+const THEME_FILTERS = ['mateIn1', 'mateIn2', 'mateIn3', 'mateIn4', 'mateIn5', 'fork', 'hangingPiece', 'pin', 'skewer', 'discoveredAttack', 'backRankMate', 'promotion', 'trappedPiece'];
 const VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
 let all = null;
@@ -67,7 +69,7 @@ export function createPuzzles(ctx) {
   const { t } = ctx;
   let cg = null;
   let theme = 'mixed';
-  let level = null; // 'easy' | 'medium' | 'hard', chosen by the child
+  let level = null; // 'easy' | 'medium' | 'hard' | 'grandmaster', chosen by the child
   let target = 0; // puzzle rating the next puzzle is picked around
   const seen = new Set(); // puzzles already given while the page is open
   let pz = null; // the puzzle on the board
@@ -146,12 +148,13 @@ export function createPuzzles(ctx) {
     $('pzLevelRow').hidden = !level;
   }
 
-  function chooseLevel(l) {
+  async function chooseLevel(l) {
     if (!LEVELS[l]) return;
     level = l;
     target = LEVELS[l].start;
     refreshLevel();
-    next();
+    await refreshThemes();
+    if (level === l) next();
   }
 
   document.querySelectorAll('[data-pz-level]').forEach((b) => b.addEventListener('click', () => chooseLevel(b.dataset.pzLevel)));
@@ -177,6 +180,33 @@ export function createPuzzles(ctx) {
       return o;
     }));
     sel.value = theme;
+  }
+
+  // Themes with puzzles on each level, worked out once from the puzzle file.
+  const levelThemes = new Map(); // level → Set of themes
+
+  async function themesOf(l) {
+    if (!levelThemes.has(l)) {
+      const { min, max } = LEVELS[l];
+      const found = new Set();
+      for (const p of await loadPuzzles()) if (p.rating >= min && p.rating < max) p.themes.forEach((x) => found.add(x));
+      levelThemes.set(l, found);
+    }
+    return levelThemes.get(l);
+  }
+
+  // Themes without puzzles on the chosen level are greyed out; if the chosen one is among them, back to Mixed.
+  async function refreshThemes() {
+    const l = level;
+    if (!l) return;
+    const found = await themesOf(l);
+    if (l !== level) return;
+    const sel = $('pzTheme');
+    for (const o of sel.options) o.disabled = o.value !== 'mixed' && !found.has(o.value);
+    if (sel.selectedOptions[0]?.disabled) {
+      theme = 'mixed';
+      sel.value = theme;
+    }
   }
 
   $('pzTheme').addEventListener('change', () => {

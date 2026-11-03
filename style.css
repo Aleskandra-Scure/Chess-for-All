@@ -329,6 +329,7 @@ button.pz-level { flex: none; min-height: 72px; display: flex; flex-direction: c
 .pz-level.easy { background: #3d9a40; }
 .pz-level.medium { background: #d68a1c; }
 .pz-level.hard { background: #b5402c; }
+.pz-level.grandmaster { background: #5b3a8c; }
 
 /* Learn: the lesson list in three groups, then one lesson with its own board. */
 .ln-list[hidden], .ln-lesson[hidden] { display: none; }
