@@ -1,7 +1,7 @@
 // Service worker: keeps the page's own files so Chess for All opens without internet after the
 // first visit. It stores only these files (no user data) and never contacts any other address.
 // After changing any file of the site, raise VERSION so devices pick up the new files.
-const VERSION = 'chess-for-all-v6';
+const VERSION = 'chess-for-all-v7';
 
 const FILES = [
   './',
@@ -92,9 +92,11 @@ self.addEventListener('activate', (event) => {
 });
 
 // Files of this site come from the cache first; anything not cached yet is fetched and kept.
+// source.zip is left to the browser: it is only downloaded when asked for, and never kept.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.endsWith('/source.zip')) return;
   event.respondWith(
     caches.open(VERSION).then(async (cache) => {
       const hit = await cache.match(req, { ignoreSearch: true });

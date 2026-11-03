@@ -435,6 +435,27 @@ cg-board square.ln-dest { background: radial-gradient(rgba(20, 85, 30, 0.5) 22%,
   .about-credits dd.about-licence { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 4px; }
 }
 
+/* Licences & source code: folded away at the very bottom of the page */
+.source-code {
+  max-width: 1100px; margin: 0 auto 24px; padding: 0 20px;
+}
+.source-code summary {
+  cursor: pointer; font-weight: 700; color: var(--accent); text-align: center; padding: 10px; list-style-position: inside;
+}
+.source-body {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; max-width: 680px; margin: 4px auto 0;
+}
+.source-intro { margin: 0 0 12px; }
+.source-download {
+  display: inline-block; margin-top: 14px; padding: 12px 18px; border-radius: 12px; font-weight: 700; text-decoration: none;
+  background: var(--accent); color: var(--accent-ink);
+}
+.source-note { margin: 8px 0 0; color: var(--muted); font-size: 0.85rem; }
+@media (max-width: 600px) {
+  .source-code { padding: 0 12px; }
+  .source-download { display: block; text-align: center; }
+}
+
 footer {
   max-width: 1100px; margin: 0 auto; padding: 4px 20px 24px; display: flex; flex-wrap: wrap;
   justify-content: center; gap: 4px 14px; color: var(--muted); font-size: 0.85rem; text-align: center;

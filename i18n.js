@@ -138,9 +138,17 @@ export const STRINGS = {
         {
           heading: 'Open source',
           paragraphs: ['Chess for All is open source under the GNU General Public License, version 3 (GPL-3.0). You can read, change and share the code.'],
-          links: [{ text: 'Source code on GitHub', href: 'https://github.com/Aleksandra-Scure/Chess-for-All' }],
+          links: [{ text: 'Licences and source code: at the bottom of the page', href: '#sourceCode' }],
         },
       ],
+    },
+
+    // The folding section at the bottom of the page (the credits list is the one in `about`)
+    source: {
+      title: 'Licences & source code',
+      intro: 'Chess for All is open source under the GNU General Public License, version 3 (GPL-3.0). You can read, change and share the code.',
+      download: 'Download the source code (.zip)',
+      downloadNote: 'The zip file holds every file of the app, with the libraries and data listed above.',
     },
 
     // Puzzles
