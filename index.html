@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chess for All</title>
+  <meta name="description" content="A free chess game for children with a friendly coach. Works offline, saves nothing.">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="icon" href="./favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="apple-mobile-web-app-title" content="Chess for All">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="./vendor/chessground/chessground.base.css">
+  <link rel="stylesheet" href="./vendor/chessground/chessground.brown.css">
+  <link rel="stylesheet" href="./vendor/chessground/chessground.cburnett.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header>
+    <h1 data-i18n="title">Chess for All</h1>
+    <div class="mode" role="group">
+      <button data-mode="play" aria-pressed="true"><span aria-hidden="true">&#9822;</span> <span data-i18n="modePlay">Play</span></button>
+      <button data-mode="puzzles" aria-pressed="false"><span aria-hidden="true">&#129513;</span> <span data-i18n="modePuzzles">Puzzles</span></button>
+    </div>
+    <div class="header-tools">
+      <button id="sound" class="sound" aria-pressed="true">🔊</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="playView" class="play">
+      <div class="board-row">
+      <div id="evalBar" class="eval" hidden>
+        <div id="evalFill" class="eval-fill"></div>
+      </div>
+      <div class="board-wrap">
+        <div id="board" class="board"></div>
+        <div id="badge" class="badge" hidden></div>
+        <div id="promo" class="promo" hidden>
+          <div id="promoBackdrop" class="promo-backdrop"></div>
+          <div class="promo-card" role="dialog">
+            <button class="promo-btn" data-promo="q"><span class="cg-wrap promo-icon"><piece class="queen"></piece></span><span data-i18n="queen">Queen</span></button>
+            <button class="promo-btn" data-promo="r"><span class="cg-wrap promo-icon"><piece class="rook"></piece></span><span data-i18n="rook">Rook</span></button>
+            <button class="promo-btn" data-promo="b"><span class="cg-wrap promo-icon"><piece class="bishop"></piece></span><span data-i18n="bishop">Bishop</span></button>
+            <button class="promo-btn" data-promo="n"><span class="cg-wrap promo-icon"><piece class="knight"></piece></span><span data-i18n="knight">Knight</span></button>
+          </div>
+        </div>
+        <div id="pause" class="pause" hidden>
+          <div class="pause-card">
+            <div class="pause-head">
+              <img id="pauseImg" class="pause-avatar" alt="">
+              <p id="pauseText" class="pause-text"></p>
+            </div>
+            <div class="pause-buttons">
+              <button id="tryAgain" class="big primary"><span aria-hidden="true">↶</span> <span data-i18n="tryAgain">Try again</span></button>
+              <button id="showBetter" class="big hint"><span aria-hidden="true">💡</span> <span data-i18n="showBetter">Show a better move</span></button>
+              <button id="keepPlaying" class="big secondary"><span aria-hidden="true">▶</span> <span data-i18n="keepPlaying">Keep playing</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+      <p id="evalText" class="eval-text" hidden></p>
+      <p id="status" class="status"></p>
+      <p id="opening" class="opening" hidden></p>
+      <div class="hint-row">
+        <button id="hint" class="hint-btn"><span aria-hidden="true">💡</span> <span id="hintLabel" data-i18n="hint">Hint</span></button>
+        <button id="showBest" class="hint-btn best-btn" hidden><span aria-hidden="true">⭐</span> <span data-i18n="showBest">Show best moves</span></button>
+        <button id="undo" class="hint-btn undo-btn"><span aria-hidden="true">↶</span> <span data-i18n="undo">Undo</span></button>
+      </div>
+      <ul id="helpLegend" class="legend" hidden>
+        <li><span class="badge-mini book">&#128214;</span><span data-i18n="gradeBook">book move</span></li>
+        <li><span class="badge-mini best">!!</span><span data-i18n="gradeBest">best</span></li>
+        <li><span class="badge-mini good">!</span><span data-i18n="gradeGood">good</span></li>
+        <li><span class="badge-mini inaccuracy">?!</span><span data-i18n="gradeInaccuracy">not quite</span></li>
+        <li><span class="badge-mini mistake">?</span><span data-i18n="gradeMistake">mistake</span></li>
+        <li><span class="badge-mini blunder">??</span><span data-i18n="gradeBlunder">big mistake</span></li>
+        <li data-kind="danger"><span class="swatch red"></span><span data-i18n="legendDanger">a piece that can be captured</span></li>
+        <li data-kind="dangerCircle"><span class="swatch round red-ring"></span><span data-i18n="legendDangerCircle">your piece in danger</span></li>
+        <li data-kind="best"><span class="swatch green"></span><span data-i18n="legendBest">best move</span></li>
+        <li data-kind="second"><span class="swatch pale-green"></span><span data-i18n="legendSecond">second best move</span></li>
+      </ul>
+      <ul id="hintLegend" class="legend" hidden>
+        <li data-kind="move"><span class="swatch green"></span><span data-i18n="legendMove">the move</span></li>
+        <li data-kind="attack"><span class="swatch red"></span><span data-i18n="legendAttack">what it attacks or captures</span></li>
+        <li data-kind="defend"><span class="swatch blue"></span><span data-i18n="legendDefend">what it protects</span></li>
+        <li data-kind="save"><span class="swatch yellow round"></span><span data-i18n="legendSave">what it saves</span></li>
+      </ul>
+    </section>
+
+    <section id="puzzleView" class="play puzzle-view" hidden>
+      <div class="board-wrap">
+        <div id="pzBoard" class="board"></div>
+        <div id="pzStart" class="pz-start">
+          <div class="pz-start-card">
+            <h2 data-i18n="pzChooseLevel">Choose a level</h2>
+            <div class="pz-start-buttons">
+              <button class="big pz-level easy" data-pz-level="easy"><strong data-i18n="pzLevels.easy">Easy</strong><span data-i18n="pzLevelAbout.easy"></span></button>
+              <button class="big pz-level medium" data-pz-level="medium"><strong data-i18n="pzLevels.medium">Medium</strong><span data-i18n="pzLevelAbout.medium"></span></button>
+              <button class="big pz-level hard" data-pz-level="hard"><strong data-i18n="pzLevels.hard">Hard</strong><span data-i18n="pzLevelAbout.hard"></span></button>
+            </div>
+          </div>
+        </div>
+        <div id="pzPromo" class="promo" hidden>
+          <div class="promo-backdrop"></div>
+          <div class="promo-card" role="dialog">
+            <button class="promo-btn" data-promo="q"><span class="cg-wrap promo-icon"><piece class="queen"></piece></span><span data-i18n="queen">Queen</span></button>
+            <button class="promo-btn" data-promo="r"><span class="cg-wrap promo-icon"><piece class="rook"></piece></span><span data-i18n="rook">Rook</span></button>
+            <button class="promo-btn" data-promo="b"><span class="cg-wrap promo-icon"><piece class="bishop"></piece></span><span data-i18n="bishop">Bishop</span></button>
+            <button class="promo-btn" data-promo="n"><span class="cg-wrap promo-icon"><piece class="knight"></piece></span><span data-i18n="knight">Knight</span></button>
+          </div>
+        </div>
+      </div>
+      <p id="pzStatus" class="status"></p>
+      <p id="pzInfo" class="pz-info" hidden></p>
+      <div class="hint-row">
+        <button id="pzHint" class="hint-btn"><span aria-hidden="true">&#128161;</span> <span id="pzHintLabel" data-i18n="hint">Hint</span></button>
+        <button id="pzSolution" class="hint-btn undo-btn"><span aria-hidden="true">&#128065;</span> <span data-i18n="pzShowSolution">Show solution</span></button>
+        <button id="pzNext" class="hint-btn best-btn"><span aria-hidden="true">&#9654;</span> <span data-i18n="pzNext">Next puzzle</span></button>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="coach">
+        <div class="coach-side">
+          <button id="coachButton" class="coach-avatar">
+            <img id="coachImg" alt="">
+            <span class="coach-swap" aria-hidden="true">⇄</span>
+          </button>
+          <strong id="coachName" class="coach-name"></strong>
+        </div>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <div id="pzMessages" class="messages" aria-live="polite" hidden></div>
+      </div>
+
+      <div id="playControls" class="controls">
+        <label>
+          <span data-i18n="youPlay">You play</span>
+          <select id="colour">
+            <option value="w" data-i18n="white">White</option>
+            <option value="b" data-i18n="black">Black</option>
+          </select>
+        </label>
+        <label>
+          <span><span data-i18n="level">Computer level</span>: <b id="levelValue">2</b></span>
+          <input id="level" type="range" min="1" max="10" step="1" value="2">
+        </label>
+        <div class="setting">
+          <span><span data-i18n="helpLevel">Help level</span>: <b id="helpName"></b></span>
+          <div id="helpLevel" class="segmented" role="group">
+            <button data-help="0">0</button>
+            <button data-help="1">1</button>
+            <button data-help="2">2</button>
+            <button data-help="3">3</button>
+          </div>
+        </div>
+        <label class="switch">
+          <input id="barToggle" type="checkbox" checked>
+          <span data-i18n="advantageBar">Advantage bar</span>
+        </label>
+        <button id="newGame" class="primary" data-i18n="newGame">New game</button>
+      </div>
+
+      <div id="puzzleControls" class="controls" hidden>
+        <div id="pzLevelRow" class="setting" hidden>
+          <span data-i18n="pzLevel">Level</span>
+          <div class="segmented" role="group">
+            <button data-pz-level="easy" data-i18n="pzLevels.easy">Easy</button>
+            <button data-pz-level="medium" data-i18n="pzLevels.medium">Medium</button>
+            <button data-pz-level="hard" data-i18n="pzLevels.hard">Hard</button>
+          </div>
+        </div>
+        <label>
+          <span data-i18n="pzTheme">Theme</span>
+          <select id="pzTheme"></select>
+        </label>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <span data-i18n="footer">Free for everyone. Nothing is saved and nothing is sent anywhere.</span>
+    <a href="./CREDITS.md" data-i18n="credits">Credits and licences</a>
+  </footer>
+
+  <div id="coachPicker" class="picker" hidden>
+    <div id="pickerBackdrop" class="picker-backdrop"></div>
+    <div class="picker-card" role="dialog" aria-labelledby="pickerTitle">
+      <div class="picker-head">
+        <h2 id="pickerTitle" data-i18n="chooseCoach">Choose your coach</h2>
+        <button id="pickerClose" class="picker-close">✕</button>
+      </div>
+      <div id="coachCards" class="coach-cards"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1053 @@
+import { Chessground } from './vendor/chessground/chessground.js';
+import { Chess } from './vendor/chess.js/chess.js';
+import { STRINGS, LANG } from './i18n.js';
+import { COACHES, DEFAULT_COACH, MOODS, coachById, coachImage } from './coaches.js';
+import { createPuzzles } from './puzzles.js';
+import { openingsReady, openingOf, openingFamily } from './openings.js';
+import { engineReady, judgeMove, computerMove, evaluate, hintFor, piecesInDanger, uciToMove, PIECE } from './analysis.js';
+import * as lines from './coach-lines.js';
+
+// Nothing is saved: every setting starts fresh each time the page is opened.
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+let level = 2;
+let helpLevel = 2;
+let showBar = true;
+let playerColour = 'w'; // colour for the current game
+let coach = coachById(DEFAULT_COACH);
+let mode = 'play'; // 'play' or 'puzzles'
+let engineOk = null; // null while Stockfish is loading, then true or false
+
+let chess = new Chess();
+let moments = [];
+let gameActive = false;
+let gameOver = false; // finished by mate or draw; Undo can bring it back to life
+let busy = false;
+let gamesStarted = 0;
+
+// Texts from i18n.js; "pzLevels.easy" reads a nested text.
+const t = (key) => key.split('.').reduce((o, k) => o?.[k], STRINGS[LANG]);
+const colourName = (c) => (c === 'w' ? 'white' : 'black');
+const coachName = (c) => t('coaches')[c.id].name;
+
+function applyTexts() {
+  document.documentElement.lang = t('htmlLang');
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  refreshSoundButton();
+  refreshCoach();
+  refreshHelpControls();
+  renderBar();
+  refreshStatus();
+}
+
+// ---------- Coach voice ----------
+
+// Only voices that run on the device itself: an online voice would send the text to a server.
+const synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
+let muted = false;
+let pendingSpeech = null; // browsers only allow speech after the first tap
+let voicesReady = Boolean(synth && synth.getVoices().length); // tablets load the voice list later
+let waitingText = null; // said before the voice list arrived
+let noVoiceShown = false;
+
+function voicesArrived() {
+  voicesReady = true;
+  if (!waitingText) return;
+  const text = waitingText;
+  waitingText = null;
+  speak(text);
+}
+
+if (synth && !voicesReady) {
+  synth.addEventListener('voiceschanged', () => {
+    if (synth.getVoices().length) voicesArrived();
+  });
+  // Some browsers never fire voiceschanged when there are no voices at all.
+  setTimeout(() => { if (!voicesReady) voicesArrived(); }, 2000);
+}
+
+// A local voice for the page language (British English first, then any English one).
+function pickVoice(code) {
+  const voices = synth.getVoices().filter((v) => v.localService);
+  const norm = (v) => v.lang.replace('_', '-').toLowerCase();
+  return voices.find((v) => norm(v) === code.toLowerCase())
+    || voices.find((v) => norm(v).startsWith(`${code.slice(0, 2).toLowerCase()}-`) || norm(v) === code.slice(0, 2).toLowerCase())
+    || null;
+}
+
+function speak(text) {
+  if (!synth || muted || !text) return;
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+    pendingSpeech = text;
+    return;
+  }
+  if (!voicesReady) {
+    waitingText = text;
+    return;
+  }
+  synth.cancel();
+  const code = t('voiceLang');
+  const voice = pickVoice(code);
+  if (!voice) {
+    // Without a local voice the coach stays quiet and only writes.
+    if (!noVoiceShown) {
+      noVoiceShown = true;
+      addMessage(t('noVoice'), '', mode === 'puzzles' ? $('pzMessages') : $('messages'));
+    }
+    return;
+  }
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = code;
+  u.voice = voice;
+  u.pitch = coach.voice.pitch;
+  u.rate = coach.voice.rate;
+  u.onstart = () => { speaking = true; refreshTalking(); };
+  u.onend = u.onerror = () => { speaking = false; refreshTalking(); };
+  synth.speak(u);
+}
+
+window.addEventListener('pointerdown', () => {
+  if (!pendingSpeech) return;
+  const text = pendingSpeech;
+  pendingSpeech = null;
+  speak(text);
+});
+
+function refreshSoundButton() {
+  const b = $('sound');
+  b.hidden = !synth;
+  b.textContent = muted ? '🔇' : '🔊';
+  b.setAttribute('aria-pressed', String(!muted));
+  b.setAttribute('aria-label', t(muted ? 'soundOff' : 'soundOn'));
+  b.title = t(muted ? 'soundOff' : 'soundOn');
+}
+
+$('sound').addEventListener('click', () => {
+  muted = !muted;
+  if (muted && synth) synth.cancel();
+  pendingSpeech = null;
+  refreshSoundButton();
+});
+
+// ---------- Coach messages ----------
+
+// `box` is the game's message list unless the puzzles pass their own.
+function addMessage(text, kind = '', box = $('messages')) {
+  const el = document.createElement('div');
+  el.className = `msg ${kind}`.trim();
+  el.textContent = text;
+  box.appendChild(el);
+  markLatest(el);
+  box.scrollTop = box.scrollHeight;
+  talkPulse();
+  return el;
+}
+
+// The newest bubble gets the little tail pointing at the coach.
+function markLatest(el) {
+  const box = el?.parentElement || $('messages');
+  box.querySelectorAll('.msg.latest').forEach((m) => m !== el && m.classList.remove('latest'));
+  if (el && el.isConnected && el === [...box.querySelectorAll('.msg')].at(-1)) el.classList.add('latest');
+}
+
+function addDivider() {
+  const el = document.createElement('div');
+  el.className = 'divider';
+  el.textContent = '· · ·';
+  $('messages').appendChild(el);
+}
+
+// The coach writes and reads a sentence out loud.
+function coachSays(text, kind = '') {
+  if (!text) return null;
+  addMessage(text, kind);
+  speak(text);
+  return text;
+}
+
+// ---------- Coach character ----------
+
+let mood = 'neutral';
+let reaction = null; // { mood, timer }: a short-lived face after something happens
+let speaking = false;
+let pulseTimer = null;
+
+// Face for the current situation (a reaction wins for a few seconds).
+function baseMood() {
+  if (mode === 'puzzles') return puzzles.mood();
+  if (gameOver && endText === 'youWon') return 'celebrate';
+  if (pause) return 'worried';
+  if (hintLoading || (hint && hint.fen === chess.fen())) return 'thinking';
+  if ((gameActive && busy) || engineOk === null) return 'thinking';
+  return 'neutral';
+}
+
+function refreshMood() {
+  mood = reaction?.mood || baseMood();
+  const src = coachImage(coach, mood);
+  for (const img of [$('coachImg'), $('pauseImg')]) {
+    if (img.getAttribute('src') !== src) img.src = src;
+  }
+  $('coachButton').dataset.mood = mood;
+}
+
+function react(face, ms = 3500) {
+  if (reaction) clearTimeout(reaction.timer);
+  reaction = { mood: face, timer: setTimeout(() => { reaction = null; refreshMood(); }, ms) };
+  refreshMood();
+}
+
+function clearReaction() {
+  if (reaction) clearTimeout(reaction.timer);
+  reaction = null;
+  refreshMood();
+}
+
+// Gentle bobbing while the coach speaks (or briefly when a message appears with the sound off).
+function refreshTalking() {
+  const on = speaking || pulseTimer !== null;
+  $('coachButton').classList.toggle('talking', on);
+  $('pauseImg').classList.toggle('talking', on);
+}
+
+function talkPulse() {
+  clearTimeout(pulseTimer);
+  pulseTimer = setTimeout(() => { pulseTimer = null; refreshTalking(); }, 1800);
+  refreshTalking();
+}
+
+function refreshCoach() {
+  $('coachName').textContent = coachName(coach);
+  $('coachImg').alt = coachName(coach);
+  $('coachButton').setAttribute('aria-label', `${coachName(coach)} — ${t('changeCoach')}`);
+  $('coachButton').title = t('changeCoach');
+  $('pickerClose').setAttribute('aria-label', t('close'));
+  renderPicker();
+  refreshMood();
+}
+
+function renderPicker() {
+  $('coachCards').replaceChildren(...COACHES.map((c) => {
+    const card = document.createElement('button');
+    card.className = 'coach-card';
+    card.dataset.coach = c.id;
+    card.setAttribute('aria-pressed', String(c.id === coach.id));
+    const img = document.createElement('img');
+    img.src = coachImage(c, 'neutral');
+    img.alt = '';
+    const name = document.createElement('strong');
+    name.textContent = coachName(c);
+    const about = document.createElement('span');
+    about.textContent = t('coaches')[c.id].about;
+    card.append(img, name, about);
+    return card;
+  }));
+}
+
+function openPicker() {
+  $('coachPicker').hidden = false;
+  $('coachCards').querySelector('[aria-pressed="true"]')?.focus();
+}
+
+function closePicker() {
+  $('coachPicker').hidden = true;
+}
+
+// A new coach takes over straight away, even in the middle of a game.
+function chooseCoach(id) {
+  coach = coachById(id);
+  for (const m of MOODS) new Image().src = coachImage(coach, m);
+  refreshCoach();
+}
+
+$('coachButton').addEventListener('click', openPicker);
+$('pickerClose').addEventListener('click', closePicker);
+$('pickerBackdrop').addEventListener('click', closePicker);
+$('coachCards').addEventListener('click', (e) => {
+  const card = e.target.closest('[data-coach]');
+  if (!card) return;
+  chooseCoach(card.dataset.coach);
+  closePicker();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('coachPicker').hidden) closePicker();
+});
+
+// ---------- Board ----------
+
+function dests() {
+  const map = new Map();
+  for (const mv of chess.moves({ verbose: true })) {
+    if (!map.has(mv.from)) map.set(mv.from, []);
+    map.get(mv.from).push(mv.to);
+  }
+  return map;
+}
+
+const cg = Chessground($('board'), {
+  fen: chess.fen(),
+  orientation: colourName(playerColour),
+  movable: { free: false, color: undefined, showDests: true, events: { after: onUserMove } },
+  premovable: { enabled: false },
+  highlight: { lastMove: true, check: true },
+  animation: { enabled: true, duration: 250 },
+});
+
+function syncBoard(lastMove) {
+  const playersTurn = gameActive && !busy && chess.turn() === playerColour;
+  cg.set({
+    fen: chess.fen(),
+    turnColor: colourName(chess.turn()),
+    check: chess.inCheck() ? colourName(chess.turn()) : false,
+    lastMove: lastMove || cg.state.lastMove,
+    movable: {
+      color: playersTurn ? colourName(playerColour) : undefined,
+      dests: playersTurn ? dests() : new Map(),
+    },
+  });
+  refreshStatus();
+}
+
+let endText = '';
+function refreshStatus() {
+  let s = '';
+  if (engineOk === false) s = t('engineFailed');
+  else if (engineOk === null) s = t('engineLoading');
+  else if (endText) s = t(endText);
+  else if (gameActive) s = chess.turn() === playerColour ? t('yourMove') : t('thinking');
+  $('status').textContent = s;
+  refreshOpening();
+  refreshMood();
+  refreshHintButton();
+  refreshShowBest();
+  refreshUndoButton();
+}
+
+// ---------- Opening book ----------
+
+let openingsTalked = new Set(); // opening families the coach has spoken about this game
+let booksLoaded = false;
+openingsReady.then(() => { booksLoaded = true; refreshOpening(); });
+
+const uciLine = () => chess.history({ verbose: true }).map((m) => m.from + m.to + (m.promotion || ''));
+
+// The last known opening of the game (positions are compared with the opening book);
+// it stays as "last known" once the game leaves the book.
+function currentOpening() {
+  if (!booksLoaded) return null;
+  const line = uciLine();
+  if (!line.length) return null;
+  const { opening, inBook } = openingOf(line);
+  return opening ? { ...opening, family: openingFamily(opening.name), inBook, ply: line.length } : null;
+}
+
+function refreshOpening() {
+  const o = currentOpening();
+  const el = $('opening');
+  el.hidden = !o;
+  if (!o) return;
+  el.textContent = t(o.inBook ? 'opening' : 'lastOpening').replace('{name}', o.name);
+  el.classList.toggle('out', !o.inBook);
+}
+
+// The opening's book moves as [{ to, piece }], for the coach's sentence about it.
+function bookMoves(o) {
+  const c = new Chess();
+  return o.uci.map((u) => {
+    const mv = c.move(uciToMove(u));
+    return { to: mv.to, piece: PIECE[mv.piece] };
+  });
+}
+
+// Help 2–3: the coach says a few words once per new opening. The first time it waits until move 3
+// (or until the game leaves the book), so it does not talk after every early move.
+function maybeTalkOpening() {
+  if (helpLevel < 2 || !gameActive) return;
+  const o = currentOpening();
+  if (!o || openingsTalked.has(o.family)) return;
+  if (openingsTalked.size === 0 && o.inBook && o.ply < 6) return;
+  openingsTalked.add(o.family);
+  coachSays(lines.opening(coach.id, o.name, bookMoves(o), playerColour));
+}
+
+// ---------- Arrows ----------
+
+const uciArrow = (uci, brush, kind) => ({ orig: uci.slice(0, 2), dest: uci.slice(2, 4), brush, kind });
+let arrows = []; // pause and hint shapes
+let hintOnBoard = false; // the hint's circle or arrows are on the board
+let dangerArrows = []; // help 2–3: attacker → piece left in danger by the player's last move
+let turnShapes = []; // help 3: circles on pieces in danger and the two best moves
+
+function drawShapes() {
+  cg.setAutoShapes([...dangerArrows, ...turnShapes, ...arrows]);
+  refreshLegend();
+}
+
+function setArrows(list, fromHint = false) {
+  arrows = list;
+  hintOnBoard = fromHint && list.length > 0;
+  drawShapes();
+}
+
+// The legends list only the arrow colours that are on the board right now.
+function refreshLegend() {
+  const kinds = new Set([...dangerArrows, ...turnShapes, ...arrows].map((x) => x.kind).filter(Boolean));
+  const show = (list) => {
+    let any = false;
+    list.querySelectorAll('li[data-kind]').forEach((li) => {
+      li.hidden = !kinds.has(li.dataset.kind);
+      if (!li.hidden) any = true;
+    });
+    return any;
+  };
+  show($('helpLegend'));
+  $('helpLegend').hidden = helpLevel < 2;
+  $('hintLegend').hidden = !show($('hintLegend'));
+}
+
+// ---------- Help level ----------
+
+function refreshHelpControls() {
+  document.querySelectorAll('[data-help]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.help) === helpLevel)));
+  $('helpName').textContent = t('helpNames')[helpLevel];
+  refreshLegend();
+  refreshShowBest();
+}
+
+document.querySelectorAll('[data-help]').forEach((b) =>
+  b.addEventListener('click', () => {
+    helpLevel = Number(b.dataset.help);
+    if (helpLevel < 2) {
+      hideBadge();
+      dangerArrows = [];
+      drawShapes();
+    }
+    if (helpLevel < 3) clearTurnHelp();
+    else if (!turn) startTurnHelp();
+    refreshHelpControls();
+  }),
+);
+
+// Grade of the player's move on its destination square; stays until the player's next move.
+const GRADE = {
+  book: '📖', best: '!!', checkmate: '!!', good: '!', inaccuracy: '?!', mistake: '?', blunder: '??',
+};
+
+function showBadge(moment) {
+  const mark = GRADE[moment.category];
+  if (!mark || helpLevel < 2) return hideBadge();
+  const file = 'abcdefgh'.indexOf(moment.to[0]);
+  const rank = Number(moment.to[1]);
+  const col = playerColour === 'w' ? file : 7 - file;
+  const row = playerColour === 'w' ? 8 - rank : rank - 1;
+  const b = $('badge');
+  b.style.left = `${(col + 1) * 12.5}%`;
+  b.style.top = `${row * 12.5}%`;
+  b.textContent = mark;
+  b.className = `badge ${moment.category === 'checkmate' ? 'best' : moment.category}`;
+  b.hidden = false;
+}
+
+function hideBadge() {
+  $('badge').hidden = true;
+}
+
+// Red arrows from the opponent's piece to the player's piece it can win, and a short warning about
+// pieces that were not in danger after the last move (unless the coach already spoke about this move).
+let warnedAbout = new Set(); // "square piece" of the pieces in danger after the player's last move
+
+function showDanger(threats, quiet) {
+  dangerArrows = threats.flatMap((x) => x.attackers.map((a) => ({ orig: a, dest: x.square, brush: 'red', kind: 'danger' })));
+  drawShapes();
+  const key = (x) => `${x.square} ${x.piece}`;
+  const fresh = threats.filter((x) => !warnedAbout.has(key(x)));
+  warnedAbout = new Set(threats.map(key));
+  if (!fresh.length) return;
+  if (!quiet) coachSays(lines.danger(coach.id, fresh), 'warn');
+  react('worried');
+}
+
+// ---------- Engine evaluation (advantage bar, best moves) ----------
+
+const analyses = new Map(); // fen → promise of { evalWhite, lines }
+
+function analyse(fen) {
+  if (!analyses.has(fen)) analyses.set(fen, evaluate(fen).catch(() => null));
+  return analyses.get(fen);
+}
+
+// Same curve as winChance in engine.js.
+const winChance = (cp) => 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * Math.max(-1000, Math.min(1000, cp)))) - 1);
+let barWhite = 50; // White's share of the bar, 0–100
+
+function setBar(evalWhite) {
+  barWhite = winChance(evalWhite);
+  renderBar();
+}
+
+function renderBar() {
+  $('evalBar').hidden = !showBar;
+  $('evalText').hidden = !showBar;
+  $('barToggle').checked = showBar;
+  $('evalBar').classList.toggle('flip', playerColour === 'b');
+  const fill = $('evalFill');
+  fill.style.height = '';
+  fill.style.width = '';
+  fill.style.setProperty(matchMedia('(max-width: 600px)').matches ? 'width' : 'height', `${barWhite}%`);
+  const mine = playerColour === 'w' ? barWhite : 100 - barWhite;
+  const key = mine >= 60 ? 'barWinning' : mine <= 40 ? 'barLosing' : 'barEven';
+  $('evalText').textContent = t(key);
+  $('evalText').className = `eval-text ${key === 'barWinning' ? 'winning' : key === 'barLosing' ? 'losing' : ''}`.trim();
+}
+
+// Asks the engine about the position on the board and moves the bar when the answer comes.
+async function updateBar() {
+  if (!showBar) return;
+  const fen = chess.fen();
+  const a = await analyse(fen);
+  if (a && chess.fen() === fen) setBar(a.evalWhite);
+}
+
+$('barToggle').addEventListener('change', () => {
+  showBar = $('barToggle').checked;
+  renderBar();
+  if (gameActive) updateBar();
+});
+matchMedia('(max-width: 600px)').addEventListener('change', renderBar);
+
+// ---------- Help during the player's turn (level 3) ----------
+
+let turn = null; // { fen, circles, lines, shown, timer }
+
+function startTurnHelp() {
+  clearTurnHelp();
+  if (helpLevel < 3 || !hintAllowed()) return;
+  const fen = chess.fen();
+  const id = gameId;
+  const me = { fen, circles: [], lines: null, shown: false, timer: null };
+  turn = me;
+  const current = () => turn === me && chess.fen() === fen && id === gameId;
+  me.circles = piecesInDanger(fen, playerColour).map((x) => ({ orig: x.square, brush: 'red', kind: 'dangerCircle' }));
+  drawTurn();
+  analyse(fen).then((a) => {
+    if (!current() || !a) return;
+    me.lines = a.lines;
+    drawTurn();
+  });
+  // The two best moves appear by themselves after 8 seconds.
+  me.timer = setTimeout(() => {
+    if (!current() || hintOnBoard) return;
+    me.shown = true;
+    drawTurn();
+  }, 8000);
+  refreshShowBest();
+}
+
+function drawTurn() {
+  if (!turn) return;
+  const shapes = [...turn.circles];
+  const custom = new Map();
+  if (turn.shown && turn.lines) {
+    turn.lines.slice(0, 2).forEach((l, i) => {
+      shapes.push(uciArrow(l.uci, i === 0 ? 'green' : 'paleGreen', i === 0 ? 'best' : 'second'));
+      const from = l.uci.slice(0, 2);
+      if (!custom.has(from)) custom.set(from, i === 0 ? 'best-piece' : 'second-piece');
+    });
+  }
+  turnShapes = shapes;
+  cg.set({ highlight: { custom } });
+  drawShapes();
+  refreshShowBest();
+}
+
+function clearTurnHelp() {
+  if (turn?.timer) clearTimeout(turn.timer);
+  turn = null;
+  turnShapes = [];
+  cg.set({ highlight: { custom: new Map() } });
+  drawShapes();
+  refreshShowBest();
+}
+
+function refreshShowBest() {
+  $('showBest').hidden = helpLevel < 3;
+  $('showBest').disabled = !turn || turn.shown || !hintAllowed();
+}
+
+$('showBest').addEventListener('click', () => {
+  if (!turn || turn.shown) return;
+  if (hintOnBoard) {
+    setArrows([]);
+    if (hint) hint.stage = 0;
+    refreshHintButton();
+  }
+  turn.shown = true;
+  drawTurn();
+});
+
+// The hint takes the best-move arrows away.
+function hideBestMoves() {
+  if (!turn?.shown) return;
+  turn.shown = false;
+  drawTurn();
+}
+
+// Everything that belongs to the start of the player's turn.
+function playerTurnStarts() {
+  startTurnHelp();
+  updateBar();
+}
+
+// ---------- Pause after a mistake ----------
+
+let pause = null; // { resolve, moment }
+
+function placePause() {
+  // Keep the bubble away from the arrows: if they sit in the lower half of the board, show it on top.
+  // The green "better move" arrow matters most once it is shown.
+  const green = arrows.filter((a) => a.brush === 'green');
+  const ranks = (green.length ? green : arrows).flatMap((a) => [a.orig[1], a.dest[1]]).map(Number);
+  const fromBottom = (r) => (playerColour === 'w' ? r : 9 - r);
+  const low = ranks.length && ranks.filter((r) => fromBottom(r) <= 4).length > ranks.length / 2;
+  $('pause').classList.toggle('top', Boolean(low));
+}
+
+// Waits for the player to choose 'retry' or 'continue' (or 'abort' when a new game starts).
+// `gentle` (help level 1) shows no arrows and no better move, only the question.
+function pauseForMistake(moment, text, gentle = false) {
+  $('pauseText').textContent = text || '';
+  if (text) talkPulse();
+  $('showBetter').hidden = gentle || !moment.bestUci;
+  $('showBetter').disabled = false;
+  setArrows(!gentle && moment.replyUci ? [uciArrow(moment.replyUci, 'red', 'danger')] : []);
+  placePause();
+  $('pause').hidden = false;
+  const choice = new Promise((resolve) => { pause = { resolve, moment }; });
+  refreshUndoButton();
+  return choice;
+}
+
+function endPause(choice) {
+  if (!pause) return;
+  const { resolve } = pause;
+  pause = null;
+  $('pause').hidden = true;
+  resolve(choice);
+  clearReaction();
+}
+
+$('tryAgain').addEventListener('click', () => endPause('retry'));
+$('keepPlaying').addEventListener('click', () => endPause('continue'));
+$('showBetter').addEventListener('click', () => {
+  if (!pause?.moment.bestUci) return;
+  setArrows([...arrows, uciArrow(pause.moment.bestUci, 'green', 'best')]);
+  placePause();
+  $('showBetter').disabled = true;
+});
+
+// ---------- Hint ----------
+
+let hint = null; // { fen, data, stage } for the position on the board
+let hintUsed = null; // 'question' or 'shown' for the move the player is about to make
+let hintLoading = false;
+
+function hintAllowed() {
+  return engineOk === true && gameActive && !busy && !pause && chess.turn() === playerColour;
+}
+
+function refreshHintButton() {
+  const stage = hint && hint.fen === chess.fen() ? hint.stage : 0;
+  $('hintLabel').textContent = t(stage === 1 ? 'showMe' : 'hint');
+  $('hint').disabled = !hintAllowed() || hintLoading || stage === 2;
+  refreshMood();
+}
+
+function clearHint() {
+  hint = null;
+  refreshHintButton();
+}
+
+$('hint').addEventListener('click', async () => {
+  if (!hintAllowed() || hintLoading) return;
+  const fen = chess.fen();
+  const id = gameId;
+  if (!hint || hint.fen !== fen) {
+    hintLoading = true;
+    refreshHintButton();
+    let data = null;
+    try {
+      data = await hintFor(fen);
+    } catch { /* no hint */ }
+    hintLoading = false;
+    if (!data || id !== gameId || chess.fen() !== fen) return refreshHintButton();
+    hint = { fen, data, stage: 0 };
+  }
+
+  const { data } = hint;
+  if (hint.stage === 0) {
+    // First tap: circle the piece and ask a guiding question.
+    hint.stage = 1;
+    if (hintUsed !== 'shown') hintUsed = 'question';
+    hideBestMoves();
+    setArrows([{ orig: data.from, brush: 'green' }], true);
+    coachSays(lines.hintQuestion(coach.id, data.facts));
+  } else if (hint.stage === 1) {
+    // Second tap: show the move and what it does.
+    hint.stage = 2;
+    hintUsed = 'shown';
+    const f = data.facts;
+    const shapes = [uciArrow(data.uci, 'green', 'move')];
+    if (f.captured) shapes.push({ orig: f.captured.square, brush: 'red', kind: 'attack' });
+    for (const x of f.attacks) shapes.push({ orig: f.to, dest: x.square, brush: 'red', kind: 'attack' });
+    for (const x of f.defends) shapes.push({ orig: f.to, dest: x.square, brush: 'blue', kind: 'defend' });
+    for (const x of f.saves) shapes.push({ orig: x.square, brush: 'yellow', kind: 'save' });
+    hideBestMoves();
+    setArrows(shapes, true);
+    coachSays(lines.hintExplanation(coach.id, f));
+  }
+  refreshHintButton();
+});
+
+// ---------- Undo ----------
+
+const playerMoves = () => chess.history({ verbose: true }).filter((m) => m.color === playerColour);
+
+function refreshUndoButton() {
+  const thinking = busy && !pause;
+  $('undo').disabled = !(gameActive || gameOver) || thinking || playerMoves().length === 0;
+}
+
+// Takes back the player's last move and the computer's answer to it (if it was played). No limit.
+$('undo').addEventListener('click', () => {
+  if ($('undo').disabled) return;
+  if (pause) {
+    // Paused after a mistake: the computer has not answered yet.
+    pause.moment.retried = true;
+    endPause('abort');
+    chess.undo();
+  } else {
+    if (chess.history({ verbose: true }).at(-1).color !== playerColour) chess.undo();
+    const undone = chess.undo();
+    const m = moments.findLast((x) => !x.retried && x.san === undone.san && x.moveNumber === chess.moveNumber());
+    if (m) m.retried = true;
+  }
+  if (gameOver) {
+    gameOver = false;
+    gameActive = true;
+    endText = '';
+  }
+  busy = false;
+  hintUsed = null;
+  hideBadge();
+  dangerArrows = [];
+  setArrows([]);
+  clearHint();
+  const prev = chess.history({ verbose: true }).at(-1);
+  cg.set({ lastMove: prev ? [prev.from, prev.to] : undefined });
+  syncBoard();
+  playerTurnStarts();
+});
+
+// ---------- Game flow ----------
+
+let gameId = 0; // guards against answers that arrive after a new game has started
+
+function localGameOver() {
+  if (!chess.isGameOver()) return null;
+  if (chess.isCheckmate()) return { reason: 'checkmate', winner: chess.turn() === 'w' ? 'b' : 'w' };
+  if (chess.isStalemate()) return { reason: 'stalemate', winner: null };
+  return { reason: 'draw', winner: null };
+}
+
+// Asks which piece the pawn becomes. Resolves with 'q', 'r', 'b' or 'n', or null if the child taps elsewhere.
+function choosePromotion() {
+  document.querySelectorAll('#promo piece').forEach((p) => p.classList.toggle('white', playerColour === 'w'));
+  document.querySelectorAll('#promo piece').forEach((p) => p.classList.toggle('black', playerColour === 'b'));
+  $('promo').hidden = false;
+  return new Promise((resolve) => {
+    const done = (choice) => {
+      $('promo').hidden = true;
+      $('promo').onclick = null;
+      resolve(choice);
+    };
+    $('promo').onclick = (e) => {
+      const btn = e.target.closest('[data-promo]');
+      if (btn) done(btn.dataset.promo);
+      else if (!e.target.closest('.promo-card')) done(null);
+    };
+  });
+}
+
+// Plays a UCI move for the computer and returns what the board needs.
+function applyComputerMove(uci) {
+  const mv = chess.move(uciToMove(uci));
+  return { from: mv.from, to: mv.to };
+}
+
+async function onUserMove(orig, dest) {
+  const piece = chess.get(orig);
+  let promotion = '';
+  if (piece?.type === 'p' && (dest[1] === '8' || dest[1] === '1')) {
+    promotion = await choosePromotion();
+    if (!promotion) {
+      // Tapped outside the choice: the pawn goes back to its square.
+      const prev = chess.history({ verbose: true }).at(-1);
+      cg.set({ lastMove: prev ? [prev.from, prev.to] : undefined });
+      syncBoard();
+      return;
+    }
+  }
+  const fenBefore = chess.fen();
+  const id = gameId;
+  const usedHint = hintUsed;
+  hintUsed = null;
+  clearHint();
+  clearTurnHelp();
+  hideBadge();
+  dangerArrows = [];
+  chess.move({ from: orig, to: dest, promotion: promotion || undefined });
+
+  busy = true;
+  setArrows([]);
+  syncBoard([orig, dest]);
+
+  const uci = orig + dest + promotion;
+  let r;
+  try {
+    r = await judgeMove(fenBefore, uci, uciLine());
+  } catch {
+    if (id !== gameId) return;
+    busy = false;
+    syncBoard();
+    return;
+  }
+  if (id !== gameId) return;
+
+  if (usedHint) r.moment.hint = usedHint;
+  moments.push(r.moment);
+  showBadge(r.moment);
+  if (r.moment.category === 'checkmate') react('celebrate');
+  else if (helpLevel >= 2) react(['best', 'good', 'book'].includes(r.moment.category) ? 'happy' : 'worried');
+  if (showBar) {
+    analyses.set(r.fenAfter, Promise.resolve({ evalWhite: r.evalWhite, lines: [] }));
+    setBar(r.evalWhite);
+  }
+  const over = localGameOver();
+  if (over) {
+    busy = false;
+    if (helpLevel >= 2 && r.moment.worthComment) coachSays(lines.praise(coach.id, r.moment));
+    return endGame(over, helpLevel >= 2);
+  }
+
+  // Help 0: no comments or pauses. Help 1: only a gentle pause before a blunder. Help 2–3: as before.
+  const isMistake = r.moment.category === 'blunder' || r.moment.category === 'mistake';
+  const gentle = helpLevel === 1;
+  const pauses = helpLevel >= 2 ? isMistake : gentle && r.moment.category === 'blunder';
+  let comment = null;
+  if (gentle && pauses) {
+    comment = lines.gentle(coach.id);
+    speak(comment);
+  } else if (helpLevel >= 2 && r.moment.worthComment) {
+    comment = coachSays(isMistake ? lines.mistake(coach.id, r.moment) : lines.praise(coach.id, r.moment), isMistake ? 'warn' : '');
+  }
+
+  // The move leaves a piece that can be won: show it before the computer answers.
+  const danger = helpLevel >= 2 && r.threats?.length > 0;
+  if (danger) showDanger(r.threats, Boolean(comment));
+  else warnedAbout = new Set();
+
+  // The computer's answer is worked out while the child reads (it is thrown away on "Try again").
+  const answer = computerMove(r.fenAfter, level).catch(() => null);
+
+  if (pauses) {
+    const choice = await pauseForMistake(r.moment, comment, gentle);
+    if (choice === 'abort' || id !== gameId) return;
+    if (choice === 'retry') {
+      // Take the move back; the computer's prepared answer is thrown away.
+      r.moment.retried = true;
+      chess.undo();
+      hideBadge();
+      dangerArrows = [];
+      setArrows(arrows.filter((a) => a.brush === 'green')); // the better move still fits this position
+      busy = false;
+      const prev = chess.history({ verbose: true }).at(-1);
+      cg.set({ lastMove: prev ? [prev.from, prev.to] : undefined });
+      syncBoard();
+      playerTurnStarts();
+      return;
+    }
+  } else {
+    await sleep(danger ? 1500 : 500);
+    if (id !== gameId) return;
+  }
+
+  const reply = await answer;
+  if (id !== gameId) return;
+  if (!reply) {
+    busy = false;
+    syncBoard();
+    return;
+  }
+  const mv = applyComputerMove(reply);
+  busy = false;
+  // Keep only the danger arrows that still fit: the attacker and the player's piece are both still there.
+  dangerArrows = dangerArrows.filter((a) => chess.get(a.orig)?.color && chess.get(a.orig).color !== playerColour && chess.get(a.dest)?.color === playerColour);
+  setArrows([]);
+  syncBoard([mv.from, mv.to]);
+
+  const overAfter = localGameOver();
+  if (overAfter) endGame(overAfter);
+  else {
+    playerTurnStarts();
+    // Not on top of a move comment or a danger warning; it can come on a later move.
+    if (!comment && !danger) maybeTalkOpening();
+  }
+}
+
+async function computerStarts() {
+  const id = gameId;
+  busy = true;
+  syncBoard();
+  const [uci] = await Promise.all([computerMove(chess.fen(), level), sleep(400)]);
+  if (id !== gameId) return;
+  const mv = applyComputerMove(uci);
+  busy = false;
+  syncBoard([mv.from, mv.to]);
+  playerTurnStarts();
+}
+
+function resultFor(over) {
+  if (!over.winner) return 'draw';
+  return over.winner === playerColour ? 'win' : 'loss';
+}
+
+function gameCounts() {
+  const counts = { best: 0, mistake: 0, blunder: 0, total: moments.length };
+  for (const m of moments) if (counts[m.category] !== undefined) counts[m.category] += 1;
+  return counts;
+}
+
+// The coach's last words on the game: the result, then one thing about how it went.
+async function endGame(over, delay = false) {
+  gameActive = false;
+  gameOver = true;
+  clearTurnHelp();
+  if (showBar) setBar(over.reason === 'checkmate' ? (over.winner === 'w' ? 10000 : -10000) : 0);
+  const result = resultFor(over);
+  endText = over.reason === 'checkmate' ? (result === 'win' ? 'youWon' : 'youLost') : over.reason === 'stalemate' ? 'stalemate' : 'draw';
+  syncBoard();
+  const id = gameId;
+  if (delay) await sleep(2500); // after the "Checkmate!" praise has been read
+  if (id !== gameId) return;
+  if (result === 'win') react('celebrate', 6000);
+  coachSays(lines.review(coach.id, result, gameCounts(), helpLevel));
+}
+
+function newGame() {
+  if (!engineOk) return;
+  gameId += 1;
+  gameOver = false;
+  endPause('abort');
+  clearReaction();
+  hideBadge();
+  dangerArrows = [];
+  clearTurnHelp();
+  setArrows([]);
+  hintUsed = null;
+  clearHint();
+
+  playerColour = $('colour').value;
+  chess = new Chess();
+  moments = [];
+  openingsTalked = new Set();
+  warnedAbout = new Set();
+  endText = '';
+  gameActive = true;
+  busy = false;
+  cg.set({ orientation: colourName(playerColour), lastMove: undefined });
+  syncBoard();
+  barWhite = 50;
+  renderBar();
+
+  if (gamesStarted++ > 0) addDivider();
+  coachSays(lines.greeting(coach.id));
+  if (playerColour === 'b') computerStarts();
+  else playerTurnStarts();
+}
+
+// ---------- Play / Puzzles ----------
+
+const puzzles = createPuzzles({
+  t,
+  coach: () => coach,
+  addMessage,
+  speak,
+  react,
+  refreshMood,
+  talkPulse,
+});
+
+// Switching keeps the game exactly as it is; it carries on when the player comes back.
+function setMode(m) {
+  if (m === mode) return;
+  mode = m;
+  if (synth) synth.cancel();
+  pendingSpeech = null;
+  waitingText = null;
+  speaking = false;
+  refreshTalking();
+  const pz = mode === 'puzzles';
+  document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+  $('playView').hidden = pz;
+  $('playControls').hidden = pz;
+  $('messages').hidden = pz;
+  $('puzzleView').hidden = !pz;
+  $('puzzleControls').hidden = !pz;
+  $('pzMessages').hidden = !pz;
+  clearReaction();
+  if (pz) puzzles.show();
+  else cg.redrawAll();
+}
+
+document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+// ---------- Controls ----------
+
+$('colour').value = playerColour;
+$('level').value = String(level);
+$('levelValue').textContent = String(level);
+$('level').addEventListener('input', () => {
+  level = Number($('level').value);
+  $('levelValue').textContent = String(level);
+});
+$('newGame').addEventListener('click', newGame);
+
+applyTexts();
+
+// Offline: the service worker keeps the page's own files so it opens without internet.
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+try {
+  await engineReady;
+  engineOk = true;
+} catch (e) {
+  console.error(e);
+  engineOk = false;
+}
+$('newGame').disabled = !engineOk;
+refreshStatus();
+newGame();
+
+// For automated tests: a read-only look at the state (nothing here is stored anywhere).
+window.chessForAll = {
+  get fen() { return chess.fen(); },
+  get busy() { return busy; },
+  get paused() { return Boolean(pause); },
+  get gameOver() { return gameOver; },
+  get moments() { return moments; },
+  get puzzles() { return puzzles.state; },
+};
