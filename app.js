@@ -3,6 +3,7 @@ import { Chess } from './vendor/chess.js/chess.js';
 import { STRINGS, LANG } from './i18n.js';
 import { COACHES, DEFAULT_COACH, MOODS, coachById, coachImage } from './coaches.js';
 import { createPuzzles } from './puzzles.js';
+import { createLearn } from './learn.js';
 import { openingsReady, openingOf, openingFamily } from './openings.js';
 import { engineReady, judgeMove, computerMove, evaluate, hintFor, piecesInDanger, uciToMove, PIECE } from './analysis.js';
 import * as lines from './coach-lines.js';
@@ -16,7 +17,7 @@ let helpLevel = 2;
 let showBar = true;
 let playerColour = 'w'; // colour for the current game
 let coach = coachById(DEFAULT_COACH);
-let mode = 'play'; // 'play' or 'puzzles'
+let mode = 'play'; // 'play', 'puzzles' or 'learn'
 let engineOk = null; // null while Stockfish is loading, then true or false
 
 let chess = new Chess();
@@ -94,7 +95,7 @@ function speak(text) {
     // Without a local voice the coach stays quiet and only writes.
     if (!noVoiceShown) {
       noVoiceShown = true;
-      addMessage(t('noVoice'), '', mode === 'puzzles' ? $('pzMessages') : $('messages'));
+      addMessage(t('noVoice'), '', { puzzles: $('pzMessages'), learn: $('lnMessages') }[mode] || $('messages'));
     }
     return;
   }
@@ -177,6 +178,7 @@ let pulseTimer = null;
 // Face for the current situation (a reaction wins for a few seconds).
 function baseMood() {
   if (mode === 'puzzles') return puzzles.mood();
+  if (mode === 'learn') return learn.mood();
   if (gameOver && endText === 'youWon') return 'celebrate';
   if (pause) return 'worried';
   if (hintLoading || (hint && hint.fen === chess.fen())) return 'thinking';
@@ -977,7 +979,7 @@ function newGame() {
   else playerTurnStarts();
 }
 
-// ---------- Play / Puzzles ----------
+// ---------- Play / Puzzles / Learn ----------
 
 const puzzles = createPuzzles({
   t,
@@ -989,6 +991,16 @@ const puzzles = createPuzzles({
   talkPulse,
 });
 
+const learn = createLearn({
+  t,
+  coach: () => coach,
+  addMessage,
+  speak,
+  react,
+  refreshMood,
+  play: () => setMode('play'),
+});
+
 // Switching keeps the game exactly as it is; it carries on when the player comes back.
 function setMode(m) {
   if (m === mode) return;
@@ -998,16 +1010,21 @@ function setMode(m) {
   waitingText = null;
   speaking = false;
   refreshTalking();
+  const play = mode === 'play';
   const pz = mode === 'puzzles';
+  const ln = mode === 'learn';
   document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
-  $('playView').hidden = pz;
-  $('playControls').hidden = pz;
-  $('messages').hidden = pz;
+  $('playView').hidden = !play;
+  $('playControls').hidden = !play;
+  $('messages').hidden = !play;
   $('puzzleView').hidden = !pz;
   $('puzzleControls').hidden = !pz;
   $('pzMessages').hidden = !pz;
+  $('learnView').hidden = !ln;
+  $('lnMessages').hidden = !ln;
   clearReaction();
   if (pz) puzzles.show();
+  else if (ln) learn.show();
   else cg.redrawAll();
 }
 
@@ -1050,4 +1067,5 @@ window.chessForAll = {
   get gameOver() { return gameOver; },
   get moments() { return moments; },
   get puzzles() { return puzzles.state; },
+  get learn() { return learn.state; },
 };

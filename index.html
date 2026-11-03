@@ -24,6 +24,7 @@
     <div class="mode" role="group">
       <button data-mode="play" aria-pressed="true"><span aria-hidden="true">&#9822;</span> <span data-i18n="modePlay">Play</span></button>
       <button data-mode="puzzles" aria-pressed="false"><span aria-hidden="true">&#129513;</span> <span data-i18n="modePuzzles">Puzzles</span></button>
+      <button data-mode="learn" aria-pressed="false"><span aria-hidden="true">&#127891;</span> <span data-i18n="modeLearn">Learn</span></button>
     </div>
     <div class="header-tools">
       <button id="sound" class="sound" aria-pressed="true">🔊</button>
@@ -123,6 +124,47 @@
       </div>
     </section>
 
+    <section id="learnView" class="play learn-view" hidden>
+      <div id="lnList" class="ln-list">
+        <h2 data-i18n="lnChoose">Choose a lesson</h2>
+        <div id="lnGroups"></div>
+      </div>
+      <div id="lnLesson" class="ln-lesson" hidden>
+        <div class="ln-head">
+          <h2 id="lnTitle" class="ln-title"></h2>
+          <ol id="lnSteps" class="ln-steps"></ol>
+        </div>
+        <div class="board-wrap">
+          <div id="lnBoard" class="board"></div>
+          <div id="lnPromo" class="promo" hidden>
+            <div class="promo-backdrop"></div>
+            <div class="promo-card" role="dialog">
+              <button class="promo-btn" data-promo="q"><span class="cg-wrap promo-icon"><piece class="queen"></piece></span><span data-i18n="queen">Queen</span></button>
+              <button class="promo-btn" data-promo="r"><span class="cg-wrap promo-icon"><piece class="rook"></piece></span><span data-i18n="rook">Rook</span></button>
+              <button class="promo-btn" data-promo="b"><span class="cg-wrap promo-icon"><piece class="bishop"></piece></span><span data-i18n="bishop">Bishop</span></button>
+              <button class="promo-btn" data-promo="n"><span class="cg-wrap promo-icon"><piece class="knight"></piece></span><span data-i18n="knight">Knight</span></button>
+            </div>
+          </div>
+          <div id="lnDone" class="ln-done" hidden>
+            <div class="ln-done-card">
+              <h2 data-i18n="lnLessonDone">Lesson complete!</h2>
+              <div class="ln-done-buttons">
+                <button id="lnNext" class="big primary"><span aria-hidden="true">&#9654;</span> <span data-i18n="lnNext">Next lesson</span></button>
+                <button id="lnTryGame" class="big hint"><span aria-hidden="true">&#9822;</span> <span data-i18n="lnTryGame">Try it in a game</span></button>
+                <button id="lnBackDone" class="big secondary"><span aria-hidden="true">&#9776;</span> <span data-i18n="lnBack">Back to lessons</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p id="lnStatus" class="status"></p>
+        <p id="lnInfo" class="pz-info" hidden></p>
+        <div class="hint-row">
+          <button id="lnReplay" class="hint-btn"><span aria-hidden="true">&#8635;</span> <span data-i18n="lnReplay">Watch again</span></button>
+          <button id="lnBack" class="hint-btn undo-btn"><span aria-hidden="true">&#9776;</span> <span data-i18n="lnBack">Back to lessons</span></button>
+        </div>
+      </div>
+    </section>
+
     <aside class="side">
       <div class="coach">
         <div class="coach-side">
@@ -134,6 +176,7 @@
         </div>
         <div id="messages" class="messages" aria-live="polite"></div>
         <div id="pzMessages" class="messages" aria-live="polite" hidden></div>
+        <div id="lnMessages" class="messages" aria-live="polite" hidden></div>
       </div>
 
       <div id="playControls" class="controls">

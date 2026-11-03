@@ -14,6 +14,7 @@ export const STRINGS = {
     title: 'Chess for All',
     modePlay: 'Play',
     modePuzzles: 'Puzzles',
+    modeLearn: 'Learn',
     youPlay: 'You play',
     white: 'White',
     black: 'Black',
@@ -171,6 +172,184 @@ export const STRINGS = {
       zugzwang: 'Zugzwang',
     },
 
+    // Learn
+    lnChoose: 'Choose a lesson',
+    lnGroups: { basics: 'Basics', rules: 'Rules', tips: 'First tips' },
+    lnWatching: 'Watch the board…',
+    lnReplay: 'Watch again',
+    lnBack: 'Back to lessons',
+    lnNext: 'Next lesson',
+    lnTryGame: 'Try it in a game',
+    lnLessonDone: 'Lesson complete!',
+    lnStepWatch: 'Watch',
+    lnStep: 'Challenge {n}',
+    lnStarsLeft: 'Stars left: {n}',
+    lnPiecesLeft: 'Pieces left: {n}',
+    lnOnly: 'Move your {piece} this time.',
+    // Each lesson: title, the coach's explanation (intro), the rule said after a move that is not
+    // allowed (rule, optional), and the challenges in the same order as in lessons.js.
+    // A challenge: task, hint (after a wrong try) and illegal (after a move that is not allowed, optional).
+    lessons: {
+      board: {
+        title: 'The board',
+        intro: 'The board has 64 squares. The columns are called files, from a to h, and the rows are ranks, from 1 to 8.',
+        challenges: [
+          { task: 'Tap the square e4.', hint: 'Find the letter e at the bottom, then go up to rank 4.' },
+          { task: 'Tap any square on the f-file.', hint: 'A file goes from the bottom to the top, so find the letter f first.' },
+          { task: 'Tap the square where the white queen starts.', hint: 'The queen stands next to the king, on a square of her own colour.' },
+        ],
+      },
+      pawn: {
+        title: 'Pawn',
+        intro: 'Pawns march straight forward, one square at a time, or two on their very first move. They capture one square diagonally forward.',
+        rule: 'Pawns only move forward, never backwards or sideways.',
+        challenges: [
+          { task: 'Collect all the stars with your pawn.', hint: 'From its starting square, a pawn may move two squares.' },
+          { task: 'Capture a black pawn.', hint: 'Pawns can’t capture straight ahead, only diagonally.' },
+          { task: 'Reach the star. You will need to capture on the way!', hint: 'Your pawn is blocked, so capture diagonally to get past.' },
+        ],
+      },
+      rook: {
+        title: 'Rook',
+        intro: 'The rook moves in straight lines: up, down and sideways. It can go as far as it likes, but it can’t jump over pieces.',
+        rule: 'A rook moves only in straight lines, never diagonally.',
+        challenges: [
+          { task: 'Collect all the stars with your rook.', hint: 'Go straight up, down or sideways to reach a star.' },
+          { task: 'Capture all the black pawns with your rook.', hint: 'Line your rook up with a pawn, then capture it.' },
+          { task: 'Move your rook to the star. Your pawn is in the way!', hint: 'The rook can’t jump, so go around your pawn.', illegal: 'The rook can’t jump over your pawn, so go around it.' },
+        ],
+      },
+      bishop: {
+        title: 'Bishop',
+        intro: 'The bishop moves diagonally, as far as it likes. It always stays on squares of the same colour.',
+        rule: 'A bishop moves only diagonally.',
+        challenges: [
+          { task: 'Collect all the stars with your bishop.', hint: 'Move diagonally, like the lines of an X.' },
+          { task: 'Capture all the black pieces with your bishop.', hint: 'Follow the diagonals to reach each piece.' },
+          { task: 'Collect the stars with your two bishops.', hint: 'Each bishop can only reach squares of its own colour.' },
+        ],
+      },
+      queen: {
+        title: 'Queen',
+        intro: 'The queen is the strongest piece. She moves like a rook and a bishop together: in straight lines and diagonals.',
+        rule: 'The queen moves in straight lines or diagonals, but she can’t jump.',
+        challenges: [
+          { task: 'Collect all the stars with your queen.', hint: 'The queen can go straight or diagonally, as far as she likes.' },
+          { task: 'Capture all the black pieces with your queen.', hint: 'Look along the lines and diagonals from your queen.' },
+        ],
+      },
+      knight: {
+        title: 'Knight',
+        intro: 'The knight moves in an L shape: two squares one way, then one square to the side. It is the only piece that can jump over others.',
+        rule: 'A knight moves in an L: two squares, then one to the side.',
+        challenges: [
+          { task: 'Collect all the stars with your knight.', hint: 'Two squares one way, then one to the side.' },
+          { task: 'Jump over your pawns and capture the black pawn.', hint: 'Make an L-shaped jump to the black pawn.' },
+          { task: 'Reach the star. It takes two jumps!', hint: 'First jump to a square from where the star is one L away.' },
+        ],
+      },
+      king: {
+        title: 'King',
+        intro: 'The king moves one square in any direction. He is the most important piece, so keep him safe!',
+        rule: 'The king moves just one square at a time.',
+        challenges: [
+          { task: 'Collect all the stars with your king.', hint: 'One step at a time, in any direction.' },
+          { task: 'Capture both black pawns with your king.', hint: 'Walk up to a pawn, one step at a time, and capture it.', illegal: 'The king moves one square at a time, and never onto a square where he could be captured.' },
+        ],
+      },
+      capturing: {
+        title: 'Capturing',
+        intro: 'To capture, move your piece onto a square with an enemy piece. The enemy piece is taken off the board.',
+        rule: 'Pieces can’t jump over others — only the knight can.',
+        challenges: [
+          { task: 'Capture the black knight.', hint: 'Your bishop can reach the knight along a diagonal.' },
+          { task: 'Capture the black queen!', hint: 'Your knight can reach her with an L-shaped jump.' },
+          { task: 'Capture the black rook.', hint: 'Your pawn blocks your rook, so use another piece.' },
+        ],
+      },
+      check: {
+        title: 'Check',
+        intro: 'Check means the king is attacked. To get out of check, move the king, block the attack, or capture the attacker.',
+        challenges: [
+          { task: 'You are in check! Move your king to safety.', hint: 'Step off the rook’s line.', illegal: 'Your king is still in check, so step off the rook’s line.' },
+          { task: 'Your king can’t move. Block the check!', hint: 'Put a piece between the rook and your king.', illegal: 'Your king is still in check, so block the rook’s line.' },
+          { task: 'Get out of check by capturing the attacker.', hint: 'Your rook can capture the piece that gives check.', illegal: 'Your king is still in check, so capture the black rook.' },
+        ],
+      },
+      checkmate: {
+        title: 'Checkmate',
+        intro: 'Checkmate is a check with no way out: the king can’t move, block or capture. Checkmate wins the game!',
+        challenges: [
+          { task: 'Checkmate in one move.', hint: 'The black king is stuck behind its own pawns, so attack it on the back rank.' },
+          { task: 'Checkmate in one move. Your king can help!', hint: 'Give check on a square where the black king has nowhere to go.' },
+          { task: 'Checkmate in one move with your rooks.', hint: 'One rook guards the 7th rank, so give check on the back rank with the other.' },
+        ],
+      },
+      castling: {
+        title: 'Castling',
+        intro: 'Castling tucks your king away and brings a rook into the game. The king moves two squares towards a rook, and the rook jumps to his other side.',
+        rule: 'To castle, move the king two squares towards the rook.',
+        challenges: [
+          { task: 'Castle on the king’s side.', hint: 'Move your king two squares towards the rook on h1.' },
+          { task: 'Castle on the queen’s side.', hint: 'Move your king two squares towards the rook on a1.' },
+          { task: 'Castle, but only on the safe side.', hint: 'The king can’t pass over a square the black bishop attacks, so castle the other way.', illegal: 'The king can’t pass over a square the black bishop attacks, so castle the other way.' },
+        ],
+      },
+      promotion: {
+        title: 'Promotion',
+        intro: 'When a pawn reaches the far end of the board, it becomes a new piece. Most players choose a queen!',
+        rule: 'Pawns only move forward, and they capture diagonally.',
+        challenges: [
+          { task: 'Walk your pawn to the end and choose a queen.', hint: 'Keep moving forward, then pick the queen.' },
+          { task: 'Your pawn is blocked. Capture your way to the last rank!', hint: 'Capture a rook diagonally, and your pawn becomes a new piece.' },
+        ],
+      },
+      enPassant: {
+        title: 'En passant',
+        intro: 'If an enemy pawn moves two squares and lands right next to your pawn, you can capture it as if it had moved only one. You must do it straight away!',
+        rule: 'Pawns capture diagonally, one square forward.',
+        challenges: [
+          { task: 'Watch Black’s pawn, then capture it en passant.', hint: 'Move your pawn diagonally to the square just behind the black pawn.' },
+          { task: 'Capture en passant again. Which pawn can do it?', hint: 'Only the pawn right next to the black pawn can capture it.' },
+        ],
+      },
+      stalemate: {
+        title: 'Stalemate and draws',
+        intro: 'Stalemate is when a player has no legal move but is not in check, and it’s a draw. It’s also a draw when nobody has enough pieces left to checkmate.',
+        challenges: [
+          { task: 'Checkmate in one, but don’t make stalemate!', hint: 'The black king must be in check, or it’s stalemate.' },
+          { task: 'Save the game: capture the last black pawn to make it a draw.', hint: 'Take the pawn with your king, because two kings alone can never checkmate.' },
+        ],
+      },
+      values: {
+        title: 'Piece values',
+        intro: 'Pieces are worth points: a pawn 1, a knight or a bishop 3, a rook 5 and a queen 9. Try to win more points than you lose!',
+        challenges: [
+          { task: 'Capture the most valuable piece you can.', hint: 'A rook is worth 5 and a pawn only 1.' },
+          { task: 'Capture the most valuable piece you can.', hint: 'The queen is worth 9 points and a bishop only 3.' },
+          { task: 'Capture a pawn, but don’t lose your queen!', hint: 'Find a pawn that nobody protects, so your queen stays safe.' },
+        ],
+      },
+      protect: {
+        title: 'Protect your pieces',
+        intro: 'When a piece is attacked, move it to safety, protect it, or capture the attacker. Before every move, check what your opponent can capture!',
+        challenges: [
+          { task: 'Your knight is attacked by a pawn. Move it to a safe square.', hint: 'Find a square that no black piece can reach.' },
+          { task: 'Your bishop is attacked. Protect it with a pawn.', hint: 'Pawns protect the squares diagonally in front of them.' },
+          { task: 'Your queen is attacked by a knight. Capture the attacker!', hint: 'One of your pawns can capture the knight.' },
+        ],
+      },
+      firstMoves: {
+        title: 'First moves',
+        intro: 'At the start, put a pawn in the centre, bring out your knights and bishops, and castle early to keep your king safe.',
+        challenges: [
+          { task: 'Start the game: put a pawn in the centre.', hint: 'Move the e-pawn or the d-pawn two squares forward.' },
+          { task: 'Bring a knight out towards the centre.', hint: 'Knights like the squares f3 and c3, near the centre.' },
+          { task: 'Your pieces are ready. Keep your king safe!', hint: 'Castle by moving your king two squares towards the rook on h1.' },
+        ],
+      },
+    },
+
     // Piece names inside coach sentences.
     pieces: { pawn: 'pawn', knight: 'knight', bishop: 'bishop', rook: 'rook', queen: 'queen', king: 'king' },
     piecesPlural: { pawn: 'pawns', knight: 'knights', bishop: 'bishops', rook: 'rooks', queen: 'queen', king: 'king' },
@@ -278,6 +457,12 @@ export const STRINGS = {
           smotheredMate: 'The king was smothered by its own pieces.',
           doubleCheck: 'Two pieces gave check at once, so the king had to move.',
         },
+
+        // Learn
+        learnWelcome: ['Pick a lesson. Each one takes a minute or two.', 'Choose a lesson to start. Have fun!'],
+        learnRight: ['Well done!', 'That’s right!', 'Great job!'],
+        learnWrong: ['Not quite.', 'Oops, not that one.'],
+        learnDone: ['Lesson complete. Well done!', 'You finished the lesson. Brilliant!'],
       },
 
       // ---------- Each coach's own voice ----------
@@ -296,6 +481,10 @@ export const STRINGS = {
         loss: ['A lost game teaches more than a won one.', 'Every master has lost many games. Play again.'],
         draw: ['A draw. Not bad at all.'],
         pzWrong: ['Not that one. Look again, calmly.', 'No. Think, then move.'],
+        learnWelcome: ['Choose a lesson. Every master started with these.'],
+        learnRight: ['Correct.', 'Good. Precisely.'],
+        learnWrong: ['No.', 'Not like that.'],
+        learnDone: ['Lesson complete. You learn quickly, my friend.'],
       },
       r7: {
         greeting: [
@@ -312,6 +501,10 @@ export const STRINGS = {
         loss: ['Not this time, but you learned something. Let’s go again.', 'Good effort. Every game makes you stronger.'],
         draw: ['A draw. A fair result.'],
         pzWrong: ['Not quite. Let’s try again.', 'That’s not it. One more try.'],
+        learnWelcome: ['Choose a lesson. Each one is short.'],
+        learnRight: ['Correct!', 'Exactly right.'],
+        learnWrong: ['Not quite.', 'Let’s try that again.'],
+        learnDone: ['Lesson complete. Excellent work!'],
       },
       kai: {
         greeting: [
@@ -329,6 +522,10 @@ export const STRINGS = {
         loss: ['Defeat is a teacher. Train again.', 'Not this time. Train and return.'],
         draw: ['A draw. Balance.'],
         pzWrong: ['No. Look deeper.', 'Not yet. Focus.'],
+        learnWelcome: ['Choose your training.'],
+        learnRight: ['Good.', 'Well done.'],
+        learnWrong: ['Not yet.', 'Look again.'],
+        learnDone: ['Training complete. Well done.'],
       },
       blitz: {
         greeting: [
@@ -346,6 +543,10 @@ export const STRINGS = {
         loss: ['GG! Next one’s yours!', 'Tough one! Queue up again!'],
         draw: ['A draw! Close match!'],
         pzWrong: ['Nope! Try again!', 'Not that one — go again!'],
+        learnWelcome: ['Pick a lesson — let’s level up!'],
+        learnRight: ['Nice one!', 'Yes! Nailed it!'],
+        learnWrong: ['Nope!', 'Whoa, not that one!'],
+        learnDone: ['Lesson cleared! GG!'],
       },
       gambit: {
         greeting: [
@@ -363,6 +564,10 @@ export const STRINGS = {
         loss: ['A brave fight! Rise and try again.', 'Even great knights fall. Ride again!'],
         draw: ['A draw — an honourable result.'],
         pzWrong: ['Not that way! Try again, brave one.', 'Hold! That’s not it.'],
+        learnWelcome: ['Choose your quest, brave one!'],
+        learnRight: ['Well done, brave one!', 'Splendid!'],
+        learnWrong: ['Not that way!', 'Hold!'],
+        learnDone: ['Quest complete! Well fought!'],
       },
     },
   },
