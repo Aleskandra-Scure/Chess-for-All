@@ -24,7 +24,7 @@ Their licences were checked in their packages (`node_modules`) and at their sour
 
 | What | Files in this project | Source | Licence |
 |---|---|---|---|
-| Chess puzzles: 3,000 puzzles chosen from the Lichess puzzle database (rating 400–1599, popular and well-tested puzzles) | `data/puzzles.json` | [database.lichess.org](https://database.lichess.org/#puzzles), file `lichess_db_puzzle.csv.zst` | **CC0** (public domain): “Database exports are released under the Creative Commons CC0 license” on database.lichess.org. Only the broadcast games there have a different licence (CC BY-SA 4.0); they are not used. |
+| Chess puzzles: 8,000 puzzles chosen from the Lichess puzzle database (2,000 for each level, ratings 400–799, 900–1299, 1400–1799 and 1900–2499; popular and well-tested puzzles, an equal share from the opening, middlegame and endgame), made with `scripts/build-puzzles.mjs` | `data/puzzles.json` | [database.lichess.org](https://database.lichess.org/#puzzles), file `lichess_db_puzzle.csv.zst` | **CC0** (public domain): “Database exports are released under the Creative Commons CC0 license” on database.lichess.org. Only the broadcast games there have a different licence (CC BY-SA 4.0); they are not used. |
 | Opening names (3,865 openings with their moves and positions) | `data/openings.json` | [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings), files `a.tsv` … `e.tsv` | **CC0-1.0** (the repository's `COPYING.txt`, reported by GitHub as “Creative Commons Zero v1.0 Universal”) |
 
 Puzzle and opening data were converted to JSON (puzzle IDs, positions, moves, ratings and theme

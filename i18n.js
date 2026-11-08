@@ -159,7 +159,7 @@ export const STRINGS = {
       easy: 'Just starting out',
       medium: 'You know the tricks',
       hard: 'Ready for a challenge',
-      grandmaster: 'Long, tough puzzles for experts',
+      grandmaster: 'Tough puzzles for experts',
     },
     pzLoading: 'Finding a puzzle…',
     pzNone: 'No puzzles found. Try another theme.',
@@ -179,6 +179,9 @@ export const STRINGS = {
     pzEasier: 'The next puzzles will be a little easier.',
     pzFilters: {
       mixed: 'Mixed',
+      opening: 'Opening',
+      middlegame: 'Middlegame',
+      endgame: 'Endgame',
       mateIn1: 'Mate in 1',
       mateIn2: 'Mate in 2',
       mateIn3: 'Mate in 3',

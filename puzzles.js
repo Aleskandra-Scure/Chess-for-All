@@ -12,7 +12,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const colourName = (c) => (c === 'w' ? 'white' : 'black');
 
 // Lichess puzzle ratings for each level, 100 points apart. The target starts in the middle and moves
-// inside its level. Grandmaster puzzles have solutions of 3 to 6 of the player's moves.
+// inside its level. Grandmaster puzzles have solutions of 1 to 6 of the player's moves, more often
+// with a quiet first move and fewer checkmates (see scripts/build-puzzles.mjs).
 export const LEVELS = {
   easy: { min: 400, max: 800, start: 600 },
   medium: { min: 900, max: 1300, start: 1100 },
@@ -21,7 +22,7 @@ export const LEVELS = {
 };
 const STEP = { clean: 50, hint: 20, failed: -50 }; // how far the target moves after each puzzle
 const WINDOW = 100; // puzzles within this distance of the target
-const THEME_FILTERS = ['mateIn1', 'mateIn2', 'mateIn3', 'mateIn4', 'mateIn5', 'fork', 'hangingPiece', 'pin', 'skewer', 'discoveredAttack', 'backRankMate', 'promotion', 'trappedPiece'];
+const THEME_FILTERS = ['opening', 'middlegame', 'endgame', 'mateIn1', 'mateIn2', 'mateIn3', 'mateIn4', 'mateIn5', 'fork', 'hangingPiece', 'pin', 'skewer', 'discoveredAttack', 'backRankMate', 'promotion', 'trappedPiece'];
 const VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
 let all = null;
