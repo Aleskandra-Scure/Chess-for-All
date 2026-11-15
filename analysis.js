@@ -170,6 +170,130 @@ export async function computerMove(fen, level) {
   return best;
 }
 
+// ---------- Opponents with a playing style (opponents.js) ----------
+
+// How far (centipawns) a move chosen for its style may be from the move the level would play anyway.
+// Small enough that the style never makes an opponent clearly weaker (or stronger) than its level.
+const STYLE_WINDOW = { 1: 60, 2: 60, 3: 50, 4: 40, 5: 30, 6: 30, 7: 25, 8: 25, 9: 15, 10: 0 };
+
+const sameLine = (a, b, n) => a.slice(0, n).every((m, i) => m === b[i]);
+
+// The next move of one of the opponent's favourite openings, while the game is still on that line.
+export function favouriteMove(opp, line, fen) {
+  const c = new Chess(fen);
+  const legal = new Set(c.moves({ verbose: true }).map(uciOf));
+  const options = opp.openings
+    .filter((o) => o.length > line.length && sameLine(o, line, line.length) && legal.has(o[line.length]))
+    .map((o) => o[line.length]);
+  return options.length ? options[Math.floor(Math.random() * options.length)] : null;
+}
+
+const fileOf = (sq) => sq.charCodeAt(0) - 97;
+const rankOf = (sq) => Number(sq[1]) - 1;
+const squareAt = (f, r) => String.fromCharCode(97 + f) + (r + 1);
+const DIRS = { b: [[1, 1], [1, -1], [-1, 1], [-1, -1]], r: [[1, 0], [-1, 0], [0, 1], [0, -1]] };
+DIRS.q = [...DIRS.b, ...DIRS.r];
+
+// Empty squares a bishop, rook or queen can reach from `sq`, and whether it pins an enemy piece
+// (an enemy piece on the line with a more valuable enemy piece, or the king, behind it).
+function lineFacts(c, sq, type, colour) {
+  let reach = 0;
+  let pin = false;
+  for (const [df, dr] of DIRS[type] || []) {
+    let f = fileOf(sq) + df;
+    let r = rankOf(sq) + dr;
+    let first = null;
+    while (f >= 0 && f < 8 && r >= 0 && r < 8) {
+      const p = c.get(squareAt(f, r));
+      if (p) {
+        if (first) {
+          if (p.color !== colour && VALUE[p.type] > VALUE[first.type]) pin = true;
+          break;
+        }
+        if (p.color === colour) break;
+        first = p;
+      } else if (!first) reach += 1;
+      f += df;
+      r += dr;
+    }
+  }
+  return { reach, pin };
+}
+
+// How much a move fits the opponent's style (0 = nothing special). Facts come from chess.js only.
+export function styleScore(style, fen, mv) {
+  if (!style || !Object.keys(style).length) return 0;
+  const before = new Chess(fen);
+  const me = before.turn();
+  const after = new Chess(fen);
+  after.move({ from: mv.from, to: mv.to, promotion: mv.promotion });
+  const facts = moveFacts(fen, uciOf(mv));
+  const forward = me === 'w' ? rankOf(mv.to) - rankOf(mv.from) : rankOf(mv.from) - rankOf(mv.to);
+  const enemyKing = after.board().flat().find((p) => p && p.type === 'k' && p.color !== me)?.square;
+  const nearKing = enemyKing ? Math.max(Math.abs(fileOf(mv.to) - fileOf(enemyKing)), Math.abs(rankOf(mv.to) - rankOf(enemyKing))) : 9;
+  const lines = lineFacts(after, mv.to, mv.piece, me);
+  const castle = mv.flags.includes('k') || mv.flags.includes('q');
+  const early = before.moveNumber() <= 12;
+  const homeRank = me === 'w' ? '1' : '8';
+
+  const f = {
+    capture: mv.captured ? 0.5 + VALUE[mv.captured] / 3 : 0,
+    knight: mv.piece === 'n' ? 1 : 0,
+    pawn: mv.piece === 'p' ? 1 + Math.max(0, forward) * 0.2 : 0,
+    longRange: 'bqr'.includes(mv.piece) ? 0.6 + lines.reach / 10 : 0,
+    defence: facts.defends.length * 0.4 + facts.saves.length + (castle ? 1.5 : 0) + (forward < 0 ? 0.3 : 0) - (forward > 1 ? 0.3 : 0),
+    tactics: (facts.fork ? 2 : 0) + (lines.pin ? 2 : 0) + facts.attacks.filter((x) => !x.defended && x.piece !== 'pawn').length * 0.7,
+    attack: (after.inCheck() ? 2 : 0) + (nearKing <= 2 ? 1 : 0)
+      + (mv.piece === 'p' && enemyKing && Math.abs(fileOf(mv.to) - fileOf(enemyKing)) <= 1 && forward > 0 ? 0.7 : 0),
+    textbook: early
+      ? (castle ? 2 : 0) + ('nb'.includes(mv.piece) && mv.from[1] === homeRank ? 1.5 : 0)
+        + (mv.piece === 'p' && 'de'.includes(mv.from[0]) ? 1 : 0) - (mv.piece === 'q' ? 1 : 0)
+      : (castle ? 1 : 0) + facts.defends.length * 0.2,
+  };
+  let total = 0;
+  for (const [k, weight] of Object.entries(style)) total += weight * (f[k] || 0);
+  return total;
+}
+
+// The opponent's move (UCI): a favourite opening move if the game is on one of its lines, otherwise a
+// move at exactly the strength of its level. Stockfish is asked for its best lines (MultiPV 4, which
+// Stockfish uses for weaker skill levels anyway, so the strength does not change); from the lines rated
+// almost the same as the move the level would play, the one that suits the opponent best is chosen.
+export async function opponentMove(fen, opp, line = []) {
+  const book = favouriteMove(opp, line, fen);
+  if (book) return book;
+  const c = new Chess(fen);
+  const cfg = LEVELS[opp.level] || LEVELS[3];
+  const moves = c.moves({ verbose: true });
+  if (Math.random() < cfg.random) {
+    // The same share of random moves as the level, but a random move the opponent likes is more likely.
+    const weights = moves.map((m) => 1 + 1.5 * Math.max(0, styleScore(opp.style, fen, m)));
+    let x = Math.random() * weights.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < moves.length; i++) if ((x -= weights[i]) <= 0) return uciOf(moves[i]);
+    return uciOf(moves.at(-1));
+  }
+  const range = STYLE_WINDOW[opp.level] ?? 0;
+  const styled = range > 0 && Object.keys(opp.style).length > 0;
+  const r = await engine.search(fen, { depth: cfg.depth, skill: cfg.skill, multiPv: styled ? 4 : 1 });
+  if (!styled || !r.best) return r.best;
+  const chosen = r.lines.find((l) => l.uci === r.best);
+  if (!chosen) return r.best;
+  const base = scoreToCp(chosen.score);
+  const byUci = new Map(moves.map((m) => [uciOf(m), m]));
+  let pick = r.best;
+  let pickValue = styleScore(opp.style, fen, byUci.get(r.best));
+  for (const l of r.lines) {
+    const cp = scoreToCp(l.score);
+    if (l.uci === r.best || !byUci.has(l.uci) || Math.abs(cp - base) > range) continue;
+    const value = styleScore(opp.style, fen, byUci.get(l.uci)) - Math.max(0, base - cp) / 50;
+    if (value > pickValue + 0.25) {
+      pick = l.uci;
+      pickValue = value;
+    }
+  }
+  return pick;
+}
+
 // Judges the player's move: grade, better move, the opponent's best answer, pieces left in danger.
 // `line`: all moves of the game so far in UCI, the player's move last (for the opening book).
 export async function judgeMove(fen, move, line) {

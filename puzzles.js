@@ -6,6 +6,8 @@ import { Chessground } from './vendor/chessground/chessground.js';
 import { Chess } from './vendor/chess.js/chess.js';
 import { moveFacts, PIECE } from './analysis.js';
 import * as lines from './coach-lines.js';
+import { play, playMove } from './sounds.js';
+import { confetti } from './confetti.js';
 
 const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -309,6 +311,7 @@ export function createPuzzles(ctx) {
     const mv = pz.chess.move(uciMove(pz.solution[pz.step]));
     pz.step += 1;
     pz.last = [mv.from, mv.to];
+    playMove(mv, pz.chess);
     sync(pz.last);
     return mv;
   }
@@ -356,6 +359,7 @@ export function createPuzzles(ctx) {
       pz.hintStage = 0;
       cg.setAutoShapes([]);
       mark(dest, 'pz-right');
+      play('right');
       if (mate || pz.step >= pz.solution.length) return finish(true);
       pz.busy = true;
       sync([orig, dest]);
@@ -376,6 +380,7 @@ export function createPuzzles(ctx) {
     cg.set({ movable: { color: undefined, dests: new Map() } });
     refreshButtons();
     mark(dest, 'pz-wrong');
+    play('wrong');
     say(lines.puzzleLine(ctx.coach().id, 'pzWrong'), 'warn');
     ctx.react('worried');
     await sleep(700);
@@ -395,6 +400,10 @@ export function createPuzzles(ctx) {
     if (byPlayer) key = outcome === 'clean' ? 'pzSolvedClean' : outcome === 'hint' ? 'pzSolvedHelp' : 'pzSolved';
     pz.outcome = outcome;
     setStatus(key);
+    if (byPlayer) {
+      play('win');
+      confetti();
+    }
     if (outcome === 'clean') ctx.react('celebrate', 5000);
     else if (byPlayer) ctx.react('happy');
     const moved = adapt(outcome);

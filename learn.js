@@ -3,6 +3,8 @@
 // it on the board, then the child does 2–3 small challenges. Positions and challenges are in
 // lessons.js, the words in i18n.js. Nothing is saved: a lesson starts from the beginning every time.
 import { Chessground } from './vendor/chessground/chessground.js';
+import { play, playMove } from './sounds.js';
+import { confetti } from './confetti.js';
 import { Chess } from './vendor/chess.js/chess.js';
 import { LESSONS, GROUPS, EMPTY } from './lessons.js';
 import * as lines from './coach-lines.js';
@@ -426,6 +428,7 @@ export function createLearn(ctx) {
         if (my !== seq) return;
         const mv = ch.chess.move(uciMove(uci));
         ch.last = [mv.from, mv.to];
+        playMove(mv, ch.chess);
         sync();
       }
       await sleep(300);
@@ -471,6 +474,7 @@ export function createLearn(ctx) {
     }
     const r = tryMove(ch.def, ch, orig + dest + promotion);
     if (r.result === 'illegal' || r.result === 'wrong') return wrong(my, r, dest);
+    playMove(r.mv, c);
     ch.last = [r.mv.from, r.mv.to];
     shapes = [];
     marks = new Map();
@@ -547,6 +551,8 @@ export function createLearn(ctx) {
     refreshSteps();
     refreshInfo();
     setStatus(t('lnLessonDone'));
+    play('win');
+    confetti();
     ctx.react('celebrate', 6000);
     say(lines.line(coachId(), 'learnDone'));
     await sleep(1200);

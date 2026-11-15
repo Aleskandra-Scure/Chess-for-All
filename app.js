@@ -6,15 +6,19 @@ import { createPuzzles } from './puzzles.js';
 import { createLearn } from './learn.js';
 import { initAbout } from './about.js';
 import { initThemes, currentTheme } from './themes.js';
+import { OPPONENTS, DEFAULT_OPPONENT, OPPONENT_MOODS, opponentById, opponentImage } from './opponents.js';
+import { createRush } from './rush.js';
+import { play as playSound, playMove, setMuted as setSoundMuted } from './sounds.js';
+import { confetti } from './confetti.js';
 import { openingsReady, openingOf, openingFamily } from './openings.js';
-import { engineReady, judgeMove, computerMove, evaluate, hintFor, piecesInDanger, uciToMove, PIECE } from './analysis.js';
+import { engineReady, judgeMove, opponentMove, evaluate, hintFor, piecesInDanger, uciToMove, PIECE } from './analysis.js';
 import * as lines from './coach-lines.js';
 
 // Nothing is saved: every setting starts fresh each time the page is opened.
 const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-let level = 2;
+let opponent = opponentById(DEFAULT_OPPONENT); // the computer opponent (its number is the strength level)
 let helpLevel = 2;
 let showBar = true;
 let playerColour = 'w'; // colour for the current game; with a friend, the side to move
@@ -23,6 +27,7 @@ let helpFor = 'both'; // with a friend: help for 'w', 'b', 'both' or 'none'
 let flipBoard = true; // with a friend: the board turns to the side to move (on each time the page opens)
 let coach = coachById(DEFAULT_COACH);
 let mode = 'play'; // 'play', 'puzzles' or 'learn'
+let pzMode = 'puzzles'; // in the Puzzles tab: 'puzzles' or 'rush'
 let engineOk = null; // null while Stockfish is loading, then true or false
 
 let chess = new Chess();
@@ -50,6 +55,7 @@ function applyTexts() {
   refreshHelpControls();
   renderBar();
   refreshStatus();
+  refreshOpponent();
 }
 
 // ---------- Coach voice ----------
@@ -87,8 +93,10 @@ function pickVoice(code) {
     || null;
 }
 
-function speak(text) {
+// `who`: an opponent (its own pitch and rate). Its words wait for the coach instead of cutting in.
+function speak(text, who = null) {
   if (!synth || muted || !text) return;
+  if (who && navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
   if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
     pendingSpeech = text;
     return;
@@ -97,7 +105,7 @@ function speak(text) {
     waitingText = text;
     return;
   }
-  synth.cancel();
+  if (!who) synth.cancel();
   const code = t('voiceLang');
   const voice = pickVoice(code);
   if (!voice) {
@@ -111,10 +119,15 @@ function speak(text) {
   const u = new SpeechSynthesisUtterance(text);
   u.lang = code;
   u.voice = voice;
-  u.pitch = coach.voice.pitch;
-  u.rate = coach.voice.rate;
-  u.onstart = () => { speaking = true; refreshTalking(); };
-  u.onend = u.onerror = () => { speaking = false; refreshTalking(); };
+  u.pitch = (who || coach).voice.pitch;
+  u.rate = (who || coach).voice.rate;
+  if (who) {
+    u.onstart = () => $('oppBar').classList.add('talking');
+    u.onend = u.onerror = () => $('oppBar').classList.remove('talking');
+  } else {
+    u.onstart = () => { speaking = true; refreshTalking(); };
+    u.onend = u.onerror = () => { speaking = false; refreshTalking(); };
+  }
   synth.speak(u);
 }
 
@@ -127,7 +140,7 @@ window.addEventListener('pointerdown', () => {
 
 function refreshSoundButton() {
   const b = $('sound');
-  b.hidden = !synth;
+  b.hidden = !synth && !(window.AudioContext || window.webkitAudioContext);
   b.textContent = muted ? '🔇' : '🔊';
   b.setAttribute('aria-pressed', String(!muted));
   b.setAttribute('aria-label', t(muted ? 'soundOff' : 'soundOn'));
@@ -136,6 +149,7 @@ function refreshSoundButton() {
 
 $('sound').addEventListener('click', () => {
   muted = !muted;
+  setSoundMuted(muted);
   if (muted && synth) synth.cancel();
   pendingSpeech = null;
   refreshSoundButton();
@@ -186,7 +200,7 @@ let pulseTimer = null;
 
 // Face for the current situation (a reaction wins for a few seconds).
 function baseMood() {
-  if (mode === 'puzzles') return puzzles.mood();
+  if (mode === 'puzzles') return pzMode === 'rush' ? rush.mood() : puzzles.mood();
   if (mode === 'learn') return learn.mood();
   if (gameOver && endText === 'youWon') return 'celebrate';
   if (pause) return 'worried';
@@ -202,6 +216,7 @@ function refreshMood() {
     if (img.getAttribute('src') !== src) img.src = src;
   }
   $('coachButton').dataset.mood = mood;
+  refreshOpponentFace();
 }
 
 function react(face, ms = 3500) {
@@ -285,6 +300,146 @@ $('coachCards').addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !$('coachPicker').hidden) closePicker();
 });
+
+// ---------- Computer opponent ----------
+
+const opponentName = (o) => t('opponents')[o.id].name;
+const levelText = (o) => t('opponentLevel').replace('{n}', String(o.level));
+let oppReaction = null; // { mood, timer }
+let oppEval = 0; // centipawns from the opponent's side, after the player's last move
+let oppQuietUntil = 0; // the opponent stays quiet until this many half-moves have been played
+let oppSaysTimer = null;
+
+// Face: thinking while it works out its move, worried when it is losing, celebrate when it is winning.
+function opponentMood() {
+  if (oppReaction) return oppReaction.mood;
+  if (gameOver && endText === 'youLost') return 'celebrate';
+  if (gameOver && endText === 'youWon') return 'worried';
+  if (gameActive && busy && chess.turn() !== playerColour) return 'thinking';
+  if (gameActive && oppEval >= 400) return 'celebrate';
+  if (gameActive && oppEval <= -300) return 'worried';
+  return 'neutral';
+}
+
+function refreshOpponentFace() {
+  const img = $('oppImg');
+  if (!img) return;
+  const src = opponentImage(opponent, opponentMood());
+  if (img.getAttribute('src') !== src) img.src = src;
+}
+
+function oppReact(face, ms = 3000) {
+  if (oppReaction) clearTimeout(oppReaction.timer);
+  oppReaction = { mood: face, timer: setTimeout(() => { oppReaction = null; refreshOpponentFace(); }, ms) };
+  refreshOpponentFace();
+}
+
+// The opponent above the board (only in games against the computer) and in the settings.
+function refreshOpponent() {
+  $('oppBar').hidden = vsFriend || !gameActive && !gameOver && gamesStarted === 0;
+  $('oppName').textContent = opponentName(opponent);
+  $('oppLevel').textContent = levelText(opponent);
+  $('oppImg').alt = opponentName(opponent);
+  $('oppButton').setAttribute('aria-label', `${opponentName(opponent)} — ${t('changeOpponent')}`);
+  $('oppButton').title = t('changeOpponent');
+  $('oppChooseImg').src = opponentImage(opponent, 'neutral');
+  $('oppChooseName').textContent = opponentName(opponent);
+  $('oppChooseLevel').textContent = levelText(opponent);
+  $('oppChoose').setAttribute('aria-label', `${t('computerOpponent')}: ${opponentName(opponent)}, ${levelText(opponent)} — ${t('changeOpponent')}`);
+  $('oppClose').setAttribute('aria-label', t('close'));
+  refreshOpponentFace();
+}
+
+// A short sentence in the bubble (and the opponent's voice). Captures, checks and lost pieces are
+// mentioned at most every few moves; the greeting and the end of the game always.
+function opponentSays(kind, piece = null) {
+  if (vsFriend) return;
+  const always = kind === 'greeting' || kind === 'win' || kind === 'lose';
+  const plies = chess.history().length;
+  if (!always && plies < oppQuietUntil) return;
+  oppQuietUntil = plies + 6;
+  const list = t('opponentLines')[opponent.id][kind];
+  let text = list[Math.floor(Math.random() * list.length)];
+  if (piece) text = text.replaceAll('{piece}', t('pieces')[piece]);
+  const bubble = $('oppSays');
+  bubble.textContent = text;
+  bubble.hidden = false;
+  bubble.style.animation = 'none';
+  void bubble.offsetWidth; // the bubble pops in again
+  bubble.style.animation = '';
+  clearTimeout(oppSaysTimer);
+  if (!always || kind === 'greeting') oppSaysTimer = setTimeout(() => { bubble.hidden = true; }, 6000);
+  speak(text, opponent);
+}
+
+function renderOpponentPicker() {
+  $('oppCards').replaceChildren(...OPPONENTS.map((o) => {
+    const card = document.createElement('button');
+    card.className = 'coach-card opp-card';
+    card.dataset.opponent = o.id;
+    card.setAttribute('aria-pressed', String(o.id === opponent.id));
+    const level = document.createElement('span');
+    level.className = 'opp-card-level';
+    level.textContent = String(o.level);
+    level.setAttribute('aria-label', levelText(o));
+    const img = document.createElement('img');
+    img.src = opponentImage(o, 'neutral');
+    img.alt = '';
+    const name = document.createElement('strong');
+    name.textContent = opponentName(o);
+    const about = document.createElement('span');
+    about.textContent = `${levelText(o)}. ${t('opponents')[o.id].about}`;
+    card.append(level, img, name, about);
+    return card;
+  }));
+}
+
+function openOpponentPicker() {
+  renderOpponentPicker();
+  $('oppPicker').hidden = false;
+  $('oppCards').querySelector('[aria-pressed="true"]')?.focus();
+}
+
+function closeOpponentPicker() {
+  $('oppPicker').hidden = true;
+}
+
+// The new opponent takes over at once, also in the middle of a game (from its next move).
+function chooseOpponent(id) {
+  const changed = id !== opponent.id;
+  opponent = opponentById(id);
+  for (const m of OPPONENT_MOODS) new Image().src = opponentImage(opponent, m);
+  oppReaction = null;
+  refreshOpponent();
+  if (changed && gameActive && !vsFriend) opponentSays('greeting');
+}
+
+$('oppChoose').addEventListener('click', openOpponentPicker);
+$('oppButton').addEventListener('click', openOpponentPicker);
+$('oppClose').addEventListener('click', closeOpponentPicker);
+$('oppBackdrop').addEventListener('click', closeOpponentPicker);
+$('oppCards').addEventListener('click', (e) => {
+  const card = e.target.closest('[data-opponent]');
+  if (!card) return;
+  chooseOpponent(card.dataset.opponent);
+  closeOpponentPicker();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('oppPicker').hidden) closeOpponentPicker();
+});
+
+// After the computer's move: a sound, and a word about a check or a capture.
+function opponentMoved(mv) {
+  playMove(mv, chess);
+  if (chess.isCheckmate()) return;
+  if (chess.inCheck()) {
+    oppReact('happy');
+    opponentSays('check');
+  } else if (mv.captured) {
+    oppReact('happy');
+    opponentSays('capture', PIECE[mv.captured]);
+  }
+}
 
 // ---------- Board ----------
 
@@ -854,6 +1009,7 @@ function choosePromotion() {
 // Plays a UCI move for the computer and returns what the board needs.
 function applyComputerMove(uci) {
   const mv = chess.move(uciToMove(uci));
+  opponentMoved(mv);
   return { from: mv.from, to: mv.to };
 }
 
@@ -878,7 +1034,12 @@ async function onUserMove(orig, dest) {
   clearTurnHelp();
   hideBadge();
   dangerArrows = [];
-  chess.move({ from: orig, to: dest, promotion: promotion || undefined });
+  const played = chess.move({ from: orig, to: dest, promotion: promotion || undefined });
+  playMove(played, chess);
+  if (played.captured && played.captured !== 'p' && !chess.isCheckmate()) {
+    oppReact('worried');
+    opponentSays('lostPiece', PIECE[played.captured]);
+  }
 
   busy = true;
   setArrows([]);
@@ -905,6 +1066,8 @@ async function onUserMove(orig, dest) {
     analyses.set(r.fenAfter, Promise.resolve({ evalWhite: r.evalWhite, lines: [] }));
     setBar(r.evalWhite);
   }
+  oppEval = playerColour === 'w' ? -r.evalWhite : r.evalWhite;
+  refreshOpponentFace();
   const over = localGameOver();
   if (over) {
     busy = false;
@@ -930,7 +1093,7 @@ async function onUserMove(orig, dest) {
   else warnedAbout = new Set();
 
   // The computer's answer is worked out while the child reads (it is thrown away on "Try again").
-  const answer = computerMove(r.fenAfter, level).catch(() => null);
+  const answer = opponentMove(r.fenAfter, opponent, uciLine()).catch(() => null);
 
   if (pauses) {
     const choice = await pauseForMistake(r.moment, comment, gentle);
@@ -1033,7 +1196,7 @@ async function onFriendMove(orig, dest) {
   clearTurnHelp();
   hideBadge();
   dangerArrows = [];
-  chess.move({ from: orig, to: dest, promotion: promotion || undefined });
+  playMove(chess.move({ from: orig, to: dest, promotion: promotion || undefined }), chess);
 
   busy = true;
   setArrows([]);
@@ -1173,7 +1336,8 @@ async function computerStarts() {
   const id = gameId;
   busy = true;
   syncBoard();
-  const [uci] = await Promise.all([computerMove(chess.fen(), level), sleep(400)]);
+  refreshOpponentFace();
+  const [uci] = await Promise.all([opponentMove(chess.fen(), opponent, uciLine()), sleep(400)]);
   if (id !== gameId) return;
   const mv = applyComputerMove(uci);
   busy = false;
@@ -1203,6 +1367,16 @@ async function endGame(over, delay = false) {
   else endText = over.reason === 'checkmate' ? (result === 'win' ? 'youWon' : 'youLost') : over.reason === 'stalemate' ? 'stalemate' : 'draw';
   syncBoard();
   if (vsFriend) refreshFriendControls();
+  if (over.reason === 'checkmate' && (vsFriend || result === 'win')) {
+    playSound('win');
+    confetti();
+  }
+  if (!vsFriend) {
+    oppReaction = null;
+    refreshOpponentFace();
+    if (result === 'win') opponentSays('lose');
+    else if (result === 'loss') opponentSays('win');
+  }
   const id = gameId;
   if (delay) await sleep(2500); // after the "Checkmate!" praise has been read
   if (id !== gameId) return;
@@ -1241,7 +1415,13 @@ function newGame() {
   refreshHelpControls();
 
   if (gamesStarted++ > 0) addDivider();
+  oppEval = 0;
+  oppQuietUntil = 0;
+  oppReaction = null;
+  $('oppSays').hidden = true;
+  refreshOpponent();
   if (!vsFriend || helpFor !== 'none') coachSays(lines.greeting(coach.id));
+  if (!vsFriend) opponentSays('greeting');
   if (!vsFriend && playerColour === 'b') computerStarts();
   else playerTurnStarts();
 }
@@ -1257,6 +1437,32 @@ const puzzles = createPuzzles({
   refreshMood,
   talkPulse,
 });
+
+const rush = createRush({
+  t,
+  addMessage,
+  speak,
+  react,
+  refreshMood,
+  exit: () => setPzMode('puzzles'),
+});
+
+// In the Puzzles tab: the normal puzzles or Puzzle Rush (each keeps its own board).
+function setPzMode(m) {
+  pzMode = m;
+  document.querySelectorAll('.pz-modes [data-pz-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pzMode === m)));
+  $('puzzleControls').classList.toggle('rush-on', m === 'rush');
+  if (mode !== 'puzzles') return;
+  $('puzzleView').hidden = m === 'rush';
+  $('rushView').hidden = m !== 'rush';
+  if (m === 'rush') rush.show();
+  else {
+    rush.hide();
+    puzzles.show();
+  }
+  clearReaction();
+}
+document.querySelectorAll('[data-pz-mode]').forEach((b) => b.addEventListener('click', () => setPzMode(b.dataset.pzMode)));
 
 const learn = createLearn({
   t,
@@ -1284,13 +1490,16 @@ function setMode(m) {
   $('playView').hidden = !play;
   $('playControls').hidden = !play;
   $('messages').hidden = !play;
-  $('puzzleView').hidden = !pz;
+  $('puzzleView').hidden = !pz || pzMode === 'rush';
+  $('rushView').hidden = !pz || pzMode !== 'rush';
   $('puzzleControls').hidden = !pz;
   $('pzMessages').hidden = !pz;
   $('learnView').hidden = !ln;
   $('lnMessages').hidden = !ln;
   clearReaction();
-  if (pz) puzzles.show();
+  if (!pz) rush.hide();
+  if (pz && pzMode === 'rush') rush.show();
+  else if (pz) puzzles.show();
   else if (ln) learn.show();
   else cg.redrawAll();
 }
@@ -1300,12 +1509,6 @@ document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('clic
 // ---------- Controls ----------
 
 $('colour').value = playerColour;
-$('level').value = String(level);
-$('levelValue').textContent = String(level);
-$('level').addEventListener('input', () => {
-  level = Number($('level').value);
-  $('levelValue').textContent = String(level);
-});
 $('newGame').addEventListener('click', newGame);
 
 applyTexts();
@@ -1342,4 +1545,9 @@ window.chessForAll = {
   get orientation() { return cg.state.orientation; },
   get status() { return $('status').textContent; },
   get theme() { return currentTheme(); },
+  get opponent() { return opponent.id; },
+  get opponentMood() { return opponentMood(); },
+  get opponentSays() { return $('oppSays').hidden ? '' : $('oppSays').textContent; },
+  get rush() { return rush.state; },
+  rushLengthForTests: (seconds) => rush.setLengthForTests(seconds),
 };

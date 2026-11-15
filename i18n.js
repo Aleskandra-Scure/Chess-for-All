@@ -18,7 +18,6 @@ export const STRINGS = {
     youPlay: 'You play',
     white: 'White',
     black: 'Black',
-    level: 'Computer level',
     newGame: 'New game',
     yourMove: 'Your move',
     thinking: 'The computer is thinking…',
@@ -807,5 +806,6 @@ export const STRINGS = {
     rushCoachStart: ['Ready, steady, go!', 'Three minutes, three lives. Go!', 'Let’s see how many you can solve. Go!'],
     rushCoachEnd: ['You solved {n}. Well done!', '{n} puzzles solved. Great effort!', 'That’s {n}! Fancy another go?'],
     rushCoachRecord: ['{n}! That’s your best yet!', 'A new best: {n}! Brilliant!'],
+    rushCoachNone: ['Those were tricky! Shall we try again?', 'No luck this time. Have another go!'],
   },
 };

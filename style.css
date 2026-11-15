@@ -469,3 +469,87 @@ footer {
   justify-content: center; gap: 4px 14px; color: var(--muted); font-size: 0.85rem; text-align: center;
 }
 footer a { color: var(--accent); }
+
+/* Computer opponent: its face, name and level above the board, and a speech bubble. */
+.opp-bar { display: flex; align-items: center; gap: 10px; max-width: 640px; margin: 0 auto 10px; min-height: 64px; }
+.opp-bar[hidden] { display: none; }
+.opp-avatar { flex: none; width: 60px; height: 60px; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: 22%; }
+.opp-avatar img { display: block; width: 100%; height: 100%; border-radius: 22%; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25); }
+.opp-bar.talking .opp-avatar img { animation: bob 450ms ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .opp-bar.talking .opp-avatar img { animation: none; } }
+.opp-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.opp-head { font-size: 0.95rem; line-height: 1.2; }
+.opp-level {
+  display: inline-block; margin-left: 4px; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 700;
+  background: var(--accent); color: var(--accent-ink);
+}
+.opp-bubble {
+  position: relative; align-self: flex-start; margin: 0; padding: 6px 12px; font-size: 0.95rem; line-height: 1.3;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 14px 14px 14px 4px;
+  animation: pop 200ms ease-out;
+}
+.opp-bubble[hidden] { display: none; }
+.opp-choose {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; text-align: left; cursor: pointer;
+  font: inherit; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 12px;
+}
+.opp-choose img { flex: none; width: 48px; height: 48px; border-radius: 22%; }
+.opp-choose-text { flex: 1; display: flex; flex-direction: column; line-height: 1.25; }
+.opp-choose-text small { color: var(--muted); font-weight: 600; }
+.opp-change { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.opp-card { position: relative; }
+.opp-card .opp-card-level {
+  position: absolute; top: 8px; left: 8px; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 15px; display: grid; place-items: center;
+  font-weight: 800; background: var(--accent); color: var(--accent-ink); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+@media (max-width: 600px) {
+  .opp-bar { min-height: 52px; gap: 8px; margin-bottom: 8px; }
+  .opp-avatar { width: 48px; height: 48px; }
+  .opp-bubble { font-size: 0.88rem; padding: 5px 10px; }
+  .opp-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Puzzle Rush */
+.pz-level.rush { background: #1f7a8c; }
+.controls .pz-modes { margin-bottom: 2px; }
+#puzzleControls.rush-on #pzLevelRow, #puzzleControls.rush-on #pzThemeRow { display: none; }
+.rush-hud { display: flex; justify-content: center; gap: 10px; max-width: 640px; margin: 0 auto 10px; }
+.rush-stat {
+  flex: 1; display: flex; flex-direction: column; align-items: center; padding: 6px 8px; border-radius: 14px;
+  background: var(--panel); border: 1px solid var(--line); font-size: 0.8rem; font-weight: 600; color: var(--muted);
+}
+.rush-stat strong { font-size: 1.6rem; line-height: 1.2; color: var(--ink); font-variant-numeric: tabular-nums; }
+.rush-stat strong.low { color: #e0403a; }
+.rush-hearts { display: flex; gap: 2px; }
+.rush-hearts .heart { color: #e0403a; }
+.rush-hearts .heart.lost { color: var(--line); }
+.rush-rules { margin: 0 0 14px; text-align: center; }
+.rush-view .pz-start-buttons button.big { flex: none; }
+.rush-end-card { max-height: calc(100% - 8px); overflow-y: auto; text-align: center; }
+.rush-reason { margin: 0 0 6px; font-weight: 700; color: var(--muted); }
+.rush-label { font-weight: 700; }
+.rush-final { font-size: 4rem; font-weight: 800; line-height: 1.05; color: var(--accent); font-variant-numeric: tabular-nums; }
+.rush-best { margin: 4px 0 12px; font-weight: 700; }
+.rush-best.record { color: var(--accent); font-size: 1.15rem; }
+.rush-end-card h3 { margin: 14px 0 6px; font-size: 1rem; }
+.rush-list { list-style: none; margin: 0; padding: 0; max-height: 9.5em; overflow-y: auto; text-align: left; }
+.rush-list li { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; padding: 5px 8px; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
+.rush-list .rush-result { margin-left: auto; font-weight: 700; }
+.rush-list li.solved .rush-result { color: #3d9a40; }
+.rush-list li.missed .rush-result { color: #e0403a; }
+.rush-solution {
+  font: inherit; font-size: 0.85rem; font-weight: 700; padding: 4px 10px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--bubble-line); background: var(--hint-bg); color: var(--accent);
+}
+@media (max-width: 600px) {
+  .rush-stat strong { font-size: 1.3rem; }
+  .rush-final { font-size: 2.6rem; }
+  .rush-end-card { padding: 12px; }
+  .rush-best { margin-bottom: 8px; }
+  .rush-end-card .pz-start-buttons { gap: 6px; }
+  .rush-end-card button.big { min-height: 46px; font-size: 1rem; padding: 6px 10px; }
+}
+
+/* Confetti over the page: taps go through it. */
+.confetti { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
+.confetti[hidden] { display: none; }

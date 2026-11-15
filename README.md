@@ -3,7 +3,25 @@
 A free chess game for children, for anyone who wants it: families, schools and clubs. Children
 play against the computer with a friendly coach, or solve chess puzzles.
 
-- **Play** against the computer, strength 1–10.
+- **Ten computer opponents** with their own character, one for each strength level 1–10:
+  Pip the Pawn (1), Bonnie the Bunny (2), Milo the Monkey (3), Captain Barnacle (4), Sir Shield (5),
+  Nova the Astronaut (6), Luna the Wizard (7), Rex the Dino (8), Professor Rook (9) and Ember the
+  Dragon (10). The child picks one in *Choose your opponent* (this replaces the old strength
+  slider); the new opponent takes over at once.
+  - **Strength:** opponent number N plays with exactly the settings of the old level N.
+  - **Style:** Stockfish works out its best lines (MultiPV), and the opponent picks among the
+    moves that are rated almost the same as the one its level would play: Bonnie likes knight moves,
+    Milo pawn moves, Barnacle captures, Sir Shield safe and defending moves, Nova bishops, rooks and
+    the queen on open lines, Luna pins and forks, Rex checks and attacks on the king, and Professor
+    Rook developing and castling. So the style never makes an opponent clearly weaker than its level.
+    Each opponent also has two favourite openings from the book, which it plays when it can.
+  - **Face and words:** each opponent has a picture with five faces (thinking while it chooses a
+    move, happy after a capture or check, worried when it is losing, celebrating when it is
+    winning) and short sentences in its own style in a bubble above the board: a greeting,
+    captures, checks, a lost piece, and the end of the game. They come at most every few moves,
+    and are read aloud with a voice that differs from the coach's.
+  - The coach and its help work as before, whichever opponent is chosen. Two players on one device
+    play as before, without an opponent.
 - **Help levels 0–3**: from no help at all to move grades (!!, !, ?!, ?, ??, 📖 book move), red
   arrows to pieces in danger, a pause after a mistake (*Try again* / *Keep playing*), and the two
   best moves shown on the board.
@@ -22,6 +40,18 @@ play against the computer with a friendly coach, or solve chess puzzles.
 - **Puzzles** from the Lichess puzzle database: choose *Easy*, *Medium* or *Hard*, and the puzzles
   get a little harder after a solved one and a little easier after a missed one. Puzzles can be
   filtered by theme (forks, pins, mate in 1 and so on).
+- **Puzzle Rush** (in the Puzzles tab): 3 minutes to solve as many puzzles as possible. They start
+  at the bottom of *Easy* and get about 50 rating points harder each time. There are 3 lives: a
+  wrong move costs one and goes straight to the next puzzle, and the round ends at 0 lives or when
+  the time is up. No hints. At the end: the score, the best score of this visit (kept only until
+  the page is closed), the puzzles of the round with the solution of each missed one, and
+  *Play again*.
+- **Sounds and confetti:** soft sounds for a move, a capture, a check, a win, a right and a wrong
+  answer in a puzzle, and ticking in the last 10 seconds of Puzzle Rush. They are made in the
+  browser with the Web Audio API, with no sound files. A short burst of confetti (about 1.5 seconds)
+  comes after a win by checkmate, a solved puzzle, a finished lesson and the end of Puzzle Rush
+  (a bigger one for a new best). The sound button mutes both the sounds and the voices. Confetti is
+  left out when the device asks for reduced motion.
 
 | Puzzle level | Lichess puzzle rating | Starts at |
 |---|---|---|
@@ -101,14 +131,18 @@ files. They switch over the next time the page is opened.
 | `index.html`, `style.css` | The page |
 | `themes.js`, `themes.css` | The ten themes: colours of the page and board, decorations and piece sets |
 | `pieces/` | The piece pictures of each theme (`classic/` holds the cburnett pieces) |
-| `app.js` | The game against the computer, the coach, help levels, hint, undo |
+| `app.js` | The game against the computer, the coach, the opponent, help levels, hint, undo |
+| `opponents.js` | The ten opponents: strength level, playing style, favourite openings, voice |
 | `puzzles.js` | Puzzle mode and the Easy / Medium / Hard levels |
-| `analysis.js` | Move grades, pieces in danger and facts about moves (chess.js + Stockfish) |
+| `rush.js` | Puzzle Rush |
+| `sounds.js`, `confetti.js` | The sounds (Web Audio API) and the confetti |
+| `analysis.js` | Move grades, pieces in danger, facts about moves and the opponents' moves (chess.js + Stockfish) |
 | `engine.js` | Talks to Stockfish in a Web Worker |
 | `openings.js` | Finds the opening name for the moves played |
 | `coach-lines.js` | Builds the coach's sentences from facts |
 | `i18n.js` | **Every text on the page and all coach sentences**, so other languages can be added |
 | `coaches.js` | The coaches' pictures and voices |
+| `avatars/` | The pictures of the coaches, and of the opponents in `avatars/opponents/` |
 | `sw.js`, `manifest.webmanifest` | Offline mode and the "add to home screen" app |
 | `data/` | Puzzles and openings from Lichess |
 | `vendor/` | Stockfish, Chessground and chess.js |

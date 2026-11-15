@@ -36,6 +36,13 @@
 
   <main>
     <section id="playView" class="play">
+      <div id="oppBar" class="opp-bar" hidden>
+        <button id="oppButton" class="opp-avatar"><img id="oppImg" alt=""></button>
+        <div class="opp-main">
+          <div class="opp-head"><strong id="oppName"></strong> <span id="oppLevel" class="opp-level"></span></div>
+          <p id="oppSays" class="opp-bubble" aria-live="polite" hidden></p>
+        </div>
+      </div>
       <div class="board-row">
       <div id="evalBar" class="eval" hidden>
         <div id="evalFill" class="eval-fill"></div>
@@ -106,6 +113,7 @@
               <button class="big pz-level medium" data-pz-level="medium"><strong data-i18n="pzLevels.medium">Medium</strong><span data-i18n="pzLevelAbout.medium"></span></button>
               <button class="big pz-level hard" data-pz-level="hard"><strong data-i18n="pzLevels.hard">Hard</strong><span data-i18n="pzLevelAbout.hard"></span></button>
               <button class="big pz-level grandmaster" data-pz-level="grandmaster"><strong data-i18n="pzLevels.grandmaster">Grandmaster</strong><span data-i18n="pzLevelAbout.grandmaster"></span></button>
+              <button class="big pz-level rush" data-pz-mode="rush"><strong><span aria-hidden="true">&#9201;</span> <span data-i18n="pzModeRush">Puzzle Rush</span></strong><span data-i18n="pzRushAbout"></span></button>
             </div>
           </div>
         </div>
@@ -125,6 +133,54 @@
         <button id="pzHint" class="hint-btn"><span aria-hidden="true">&#128161;</span> <span id="pzHintLabel" data-i18n="hint">Hint</span></button>
         <button id="pzSolution" class="hint-btn undo-btn"><span aria-hidden="true">&#128065;</span> <span data-i18n="pzShowSolution">Show solution</span></button>
         <button id="pzNext" class="hint-btn best-btn"><span aria-hidden="true">&#9654;</span> <span data-i18n="pzNext">Next puzzle</span></button>
+      </div>
+    </section>
+
+    <section id="rushView" class="play rush-view" hidden>
+      <div class="rush-hud">
+        <div class="rush-stat"><span data-i18n="rushTime">Time left</span><strong id="rushTime">3:00</strong></div>
+        <div class="rush-stat"><span data-i18n="rushLives">Lives</span><strong id="rushLives" class="rush-hearts"></strong></div>
+        <div class="rush-stat"><span data-i18n="rushScore">Score</span><strong id="rushScore">0</strong></div>
+      </div>
+      <div class="board-wrap">
+        <div id="rushBoard" class="board"></div>
+        <div id="rushPromo" class="promo" hidden>
+          <div class="promo-backdrop"></div>
+          <div class="promo-card" role="dialog">
+            <button class="promo-btn" data-promo="q"><span class="cg-wrap promo-icon"><piece class="queen"></piece></span><span data-i18n="queen">Queen</span></button>
+            <button class="promo-btn" data-promo="r"><span class="cg-wrap promo-icon"><piece class="rook"></piece></span><span data-i18n="rook">Rook</span></button>
+            <button class="promo-btn" data-promo="b"><span class="cg-wrap promo-icon"><piece class="bishop"></piece></span><span data-i18n="bishop">Bishop</span></button>
+            <button class="promo-btn" data-promo="n"><span class="cg-wrap promo-icon"><piece class="knight"></piece></span><span data-i18n="knight">Knight</span></button>
+          </div>
+        </div>
+        <div id="rushIntro" class="pz-start">
+          <div class="pz-start-card">
+            <h2 data-i18n="rushTitle">Puzzle Rush</h2>
+            <p class="rush-rules" data-i18n="rushRules"></p>
+            <div class="pz-start-buttons">
+              <button id="rushGo" class="big primary"><span aria-hidden="true">&#9654;</span> <span data-i18n="rushStart">Start</span></button>
+              <button id="rushBack1" class="big secondary" data-i18n="rushBackToPuzzles">Back to puzzles</button>
+            </div>
+          </div>
+        </div>
+        <div id="rushEnd" class="pz-start" hidden>
+          <div class="pz-start-card rush-end-card">
+            <p id="rushEndReason" class="rush-reason"></p>
+            <span class="rush-label" data-i18n="rushYourScore">Your score</span>
+            <div id="rushFinal" class="rush-final">0</div>
+            <p id="rushBestLine" class="rush-best"></p>
+            <div class="pz-start-buttons">
+              <button id="rushAgain" class="big primary"><span aria-hidden="true">&#8635;</span> <span data-i18n="rushPlayAgain">Play again</span></button>
+              <button id="rushBack2" class="big secondary" data-i18n="rushBackToPuzzles">Back to puzzles</button>
+            </div>
+            <h3 id="rushRoundTitle" data-i18n="rushRound">Puzzles in this round</h3>
+            <ol id="rushList" class="rush-list"></ol>
+          </div>
+        </div>
+      </div>
+      <p id="rushStatus" class="status"></p>
+      <div class="hint-row">
+        <button id="rushResults" class="hint-btn" hidden><span aria-hidden="true">&#9776;</span> <span data-i18n="rushBackToResults">Back to results</span></button>
       </div>
     </section>
 
@@ -198,10 +254,14 @@
             <option value="b" data-i18n="black">Black</option>
           </select>
         </label>
-        <label id="levelRow">
-          <span><span data-i18n="level">Computer level</span>: <b id="levelValue">2</b></span>
-          <input id="level" type="range" min="1" max="10" step="1" value="2">
-        </label>
+        <div id="levelRow" class="setting">
+          <span data-i18n="computerOpponent">Computer opponent</span>
+          <button id="oppChoose" class="opp-choose">
+            <img id="oppChooseImg" alt="">
+            <span class="opp-choose-text"><strong id="oppChooseName"></strong><small id="oppChooseLevel"></small></span>
+            <span class="opp-change" aria-hidden="true">⇄</span>
+          </button>
+        </div>
         <div id="helpForRow" class="setting" hidden>
           <span data-i18n="helpFor">Help for</span>
           <div class="segmented" role="group">
@@ -236,6 +296,10 @@
       </div>
 
       <div id="puzzleControls" class="controls" hidden>
+        <div class="segmented pz-modes" role="group">
+          <button data-pz-mode="puzzles" aria-pressed="true" data-i18n="pzModePuzzles">Puzzles</button>
+          <button data-pz-mode="rush" aria-pressed="false" data-i18n="pzModeRush">Puzzle Rush</button>
+        </div>
         <div id="pzLevelRow" class="setting" hidden>
           <span data-i18n="pzLevel">Level</span>
           <div class="segmented" role="group">
@@ -245,7 +309,7 @@
             <button data-pz-level="grandmaster" data-i18n="pzLevels.grandmaster">Grandmaster</button>
           </div>
         </div>
-        <label>
+        <label id="pzThemeRow">
           <span data-i18n="pzTheme">Theme</span>
           <select id="pzTheme"></select>
         </label>
@@ -271,6 +335,17 @@
         <button id="pickerClose" class="picker-close">✕</button>
       </div>
       <div id="coachCards" class="coach-cards"></div>
+    </div>
+  </div>
+
+  <div id="oppPicker" class="picker" hidden>
+    <div id="oppBackdrop" class="picker-backdrop"></div>
+    <div class="picker-card" role="dialog" aria-labelledby="oppTitle">
+      <div class="picker-head">
+        <h2 id="oppTitle" data-i18n="chooseOpponent">Choose your opponent</h2>
+        <button id="oppClose" class="picker-close">✕</button>
+      </div>
+      <div id="oppCards" class="coach-cards opp-cards"></div>
     </div>
   </div>
 
