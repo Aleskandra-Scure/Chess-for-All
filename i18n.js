@@ -30,6 +30,8 @@ export const STRINGS = {
     tryAgain: 'Try again',
     keepPlaying: 'Keep playing',
     showBetter: 'Show a better move',
+    pauseBarBetter: 'The green arrow shows a better move. Try again, or keep playing?',
+    pauseBarBoth: 'Green arrow: a better move. Red arrow: what your opponent could do. Try again, or keep playing?',
     queen: 'Queen',
     rook: 'Rook',
     bishop: 'Bishop',

@@ -212,7 +212,7 @@ function baseMood() {
 function refreshMood() {
   mood = reaction?.mood || baseMood();
   const src = coachImage(coach, mood);
-  for (const img of [$('coachImg'), $('pauseImg')]) {
+  for (const img of [$('coachImg'), $('pauseImg'), $('pauseBarImg')]) {
     if (img.getAttribute('src') !== src) img.src = src;
   }
   $('coachButton').dataset.mood = mood;
@@ -816,6 +816,7 @@ function pauseForMistake(moment, text, gentle = false) {
   setArrows(!gentle && moment.replyUci ? [uciArrow(moment.replyUci, 'red', 'danger')] : []);
   placePause();
   $('pause').hidden = false;
+  $('pauseBar').hidden = true;
   const choice = new Promise((resolve) => { pause = { resolve, moment }; });
   refreshUndoButton();
   return choice;
@@ -826,17 +827,25 @@ function endPause(choice) {
   const { resolve } = pause;
   pause = null;
   $('pause').hidden = true;
+  $('pauseBar').hidden = true;
   resolve(choice);
   clearReaction();
 }
 
 $('tryAgain').addEventListener('click', () => endPause('retry'));
 $('keepPlaying').addEventListener('click', () => endPause('continue'));
+$('tryAgainBar').addEventListener('click', () => endPause('retry'));
+$('keepPlayingBar').addEventListener('click', () => endPause('continue'));
+// The better move: the card leaves the board and the choice waits in a bar under it.
 $('showBetter').addEventListener('click', () => {
   if (!pause?.moment.bestUci) return;
+  const danger = arrows.some((a) => a.brush === 'red');
   setArrows([...arrows, uciArrow(pause.moment.bestUci, 'green', 'best')]);
-  placePause();
   $('showBetter').disabled = true;
+  $('pause').hidden = true;
+  $('pauseBarText').textContent = t(danger ? 'pauseBarBoth' : 'pauseBarBetter');
+  $('pauseBar').hidden = false;
+  $('tryAgainBar').focus({ preventScroll: true });
 });
 
 // ---------- Hint ----------

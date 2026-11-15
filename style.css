@@ -130,6 +130,14 @@ cg-board square.second-piece { background: rgba(21, 120, 27, 0.25); }
 .pause-head .avatar { flex: none; }
 .pause-text { margin: 0; max-height: 6.5em; overflow-y: auto; }
 .pause-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+/* After "Show a better move" the choice moves under the board, so the arrows stay visible. */
+.pause-bar {
+  max-width: 640px; margin: 10px auto 0; background: var(--panel); border: 2px solid var(--warn-line);
+  border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 8px; animation: pop 200ms ease-out;
+}
+.pause-bar[hidden] { display: none; }
+.pause-bar .pause-avatar { width: 44px; height: 44px; }
+.pause-bar button.big { min-height: 48px; }
 button.big {
   flex: 1 1 140px; min-height: 56px; font: inherit; font-size: 1.1rem; font-weight: 700;
   border-radius: 14px; border: 0; cursor: pointer; padding: 10px 12px;
