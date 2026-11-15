@@ -1,0 +1,515 @@
+/* Themes: colours of the page and the board, decorations and piece sets.
+   The theme is the data-theme attribute on <html> (Classic every time the page opens; nothing is saved).
+   The cards in the theme picker carry their own data-theme, so each card shows its own board and pieces.
+   Classic keeps the look of style.css, chessground.brown.css and the cburnett pieces unchanged. */
+
+/* ---------- Pieces: every board, promotion button and lesson icon takes them from the theme ---------- */
+.cg-wrap piece.pawn.white { background-image: var(--wP); }
+.cg-wrap piece.knight.white { background-image: var(--wN); }
+.cg-wrap piece.bishop.white { background-image: var(--wB); }
+.cg-wrap piece.rook.white { background-image: var(--wR); }
+.cg-wrap piece.queen.white { background-image: var(--wQ); }
+.cg-wrap piece.king.white { background-image: var(--wK); }
+.cg-wrap piece.pawn.black { background-image: var(--bP); }
+.cg-wrap piece.knight.black { background-image: var(--bN); }
+.cg-wrap piece.bishop.black { background-image: var(--bB); }
+.cg-wrap piece.rook.black { background-image: var(--bR); }
+.cg-wrap piece.queen.black { background-image: var(--bQ); }
+.cg-wrap piece.king.black { background-image: var(--bK); }
+
+[data-theme="classic"] {
+  --wP: url('./pieces/classic/wP.svg'); --wN: url('./pieces/classic/wN.svg'); --wB: url('./pieces/classic/wB.svg');
+  --wR: url('./pieces/classic/wR.svg'); --wQ: url('./pieces/classic/wQ.svg'); --wK: url('./pieces/classic/wK.svg');
+  --bP: url('./pieces/classic/bP.svg'); --bN: url('./pieces/classic/bN.svg'); --bB: url('./pieces/classic/bB.svg');
+  --bR: url('./pieces/classic/bR.svg'); --bQ: url('./pieces/classic/bQ.svg'); --bK: url('./pieces/classic/bK.svg');
+  --sq-light: #f0d9b5; --sq-dark: #c0ae91; /* the same squares as chessground.brown.css */
+  --bg: #f6f1e7; --panel: #fffdf8; --ink: #2b2620; --line: #e4dccd; --accent: #2f6b4f; --accent-ink: #ffffff;
+}
+
+/* ---------- Shared rules for every theme except Classic ---------- */
+:root:not([data-theme="classic"]) cg-board {
+  background-color: var(--sq-light);
+  background-image: var(--board-extra, none), repeating-conic-gradient(var(--sq-dark) 0 25%, var(--sq-light) 0 50%);
+  background-size: 100% 100%, 25% 25%;
+}
+:root:not([data-theme="classic"]) cg-board square.last-move { background-color: var(--last-move); }
+:root:not([data-theme="classic"]) cg-board square.selected { background-color: var(--selected); }
+:root:not([data-theme="classic"]) cg-board square.move-dest {
+  background: radial-gradient(var(--dest) 19%, var(--dest-ring) 0 25%, transparent 0);
+}
+:root:not([data-theme="classic"]) cg-board square.oc.move-dest {
+  background: radial-gradient(transparent 0 74%, var(--dest-ring) 0 79%, var(--dest) 0 88%, var(--dest-ring) 0);
+}
+:root:not([data-theme="classic"]) cg-board square.move-dest:hover { background: var(--selected); }
+/* Arrows and circles: stronger, with a thin light edge so red, blue, green and yellow all stand out. */
+:root:not([data-theme="classic"]) .cg-wrap .cg-shapes {
+  opacity: 0.8;
+  filter: drop-shadow(0 0 1px var(--shape-edge)) drop-shadow(0 0 1px var(--shape-edge));
+}
+:root:not([data-theme="classic"]) .cg-wrap coords coord { color: var(--coord-dark) !important; font-weight: 700; }
+:root:not([data-theme="classic"]) .orientation-white .ranks :nth-child(odd),
+:root:not([data-theme="classic"]) .orientation-white .files :nth-child(even),
+:root:not([data-theme="classic"]) .orientation-black .ranks :nth-child(even),
+:root:not([data-theme="classic"]) .orientation-black .files :nth-child(odd) { color: var(--coord-light) !important; }
+:root:not([data-theme="classic"]) .controls select { color: var(--ink); }
+:root:not([data-theme="classic"]) .board-wrap .board { border-radius: 4px; box-shadow: 0 0 0 4px var(--frame), 0 8px 26px rgba(0, 0, 0, 0.45); }
+:root:not([data-theme="classic"]) .status.turn-w::before { border-color: var(--line); }
+:root:not([data-theme="classic"]) .board-wrap { isolation: isolate; }
+
+/* Decorations sit behind everything and never move. */
+:root:not([data-theme="classic"]) { background: var(--page-bg); background-color: var(--bg); background-attachment: fixed; }
+:root:not([data-theme="classic"]) body { background: transparent; }
+:where(:root:not([data-theme="classic"])) body::before,
+:where(:root:not([data-theme="classic"])) body::after {
+  content: ""; position: fixed; z-index: -1; pointer-events: none; background-repeat: no-repeat;
+}
+
+/* ---------- Wizard Academy: a castle at night, purple and gold ---------- */
+[data-theme="wizard"] {
+  --wP: url('./pieces/wizard/wP.svg'); --wN: url('./pieces/wizard/wN.svg'); --wB: url('./pieces/wizard/wB.svg');
+  --wR: url('./pieces/wizard/wR.svg'); --wQ: url('./pieces/wizard/wQ.svg'); --wK: url('./pieces/wizard/wK.svg');
+  --bP: url('./pieces/wizard/bP.svg'); --bN: url('./pieces/wizard/bN.svg'); --bB: url('./pieces/wizard/bB.svg');
+  --bR: url('./pieces/wizard/bR.svg'); --bQ: url('./pieces/wizard/bQ.svg'); --bK: url('./pieces/wizard/bK.svg');
+  --sq-light: #ecd9a0; --sq-dark: #6a4c9c;
+  --board-extra: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cdefs%3E%3Cpath id='s' d='M0-.09L.025-.025.09 0 .025.025 0 .09-.025.025-.09 0-.025-.025Z' fill='%23f6dc8a'/%3E%3Cpattern id='p' width='2' height='2' patternUnits='userSpaceOnUse'%3E%3Cuse href='%23s' x='1.84' y='.16'/%3E%3Cuse href='%23s' x='.84' y='1.16'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='8' height='8' fill='url(%23p)' opacity='.6'/%3E%3C/svg%3E");
+  --last-move: rgba(90, 210, 255, 0.45); --selected: rgba(90, 210, 255, 0.6);
+  --dest: rgba(40, 200, 255, 0.95); --dest-ring: rgba(20, 12, 50, 0.65);
+  --shape-edge: rgba(255, 255, 255, 0.95);
+  --coord-light: #3b2a63; --coord-dark: #f6e6b4;
+  --frame: #c9a24a;
+  --bg: #1b1436; --panel: #2a2052; --ink: #f4efff; --muted: #c6badf; --line: #4b3b80;
+  --accent: #f2c75c; --accent-ink: #231a45; --bubble: #392c6c; --bubble-line: #5c4b9c;
+  --warn: #4a2346; --warn-line: #a0577e; --field: #211946; --soft: #3c3070; --hint-bg: #392c6c;
+  --best-bg: #4a3b1c; --best-ink: #ffd970; --best-line: #8f712b; --losing: #ff9f86;
+  --overlay: rgba(20, 14, 42, 0.82);
+  --page-bg:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cg fill='%23fff6d0'%3E%3Ccircle cx='20' cy='30' r='1.2' opacity='.8'/%3E%3Ccircle cx='96' cy='12' r='.9' opacity='.6'/%3E%3Ccircle cx='170' cy='44' r='1.3' opacity='.7'/%3E%3Ccircle cx='226' cy='96' r='.9' opacity='.6'/%3E%3Ccircle cx='60' cy='120' r='1' opacity='.5'/%3E%3Ccircle cx='140' cy='150' r='1.2' opacity='.7'/%3E%3Ccircle cx='30' cy='200' r='.9' opacity='.6'/%3E%3Ccircle cx='200' cy='210' r='1.1' opacity='.6'/%3E%3Ccircle cx='110' cy='226' r='.8' opacity='.5'/%3E%3Cpath d='M130 80l1.6 4.4 4.4 1.6-4.4 1.6-1.6 4.4-1.6-4.4-4.4-1.6 4.4-1.6z' opacity='.8'/%3E%3Cpath d='M44 70l1.1 3 3 1.1-3 1.1-1.1 3-1.1-3-3-1.1 3-1.1z' opacity='.6'/%3E%3Cpath d='M206 160l1.1 3 3 1.1-3 1.1-1.1 3-1.1-3-3-1.1 3-1.1z' opacity='.6'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(#100b26, #2a1c58 70%, #3a2668);
+}
+[data-theme="wizard"] body::before {
+  left: 0; right: 0; bottom: 0; height: 210px; opacity: 0.9;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='720' height='210' viewBox='0 0 720 210'%3E%3Cg fill='%23120c2a'%3E%3Cpath d='M0 210V150h40v-30h-8l24-46 24 46h-8v30h60V96h-10l30-58 30 58h-10v54h50v-24h12V112l16-10 16 10v14h12v24h40V60h-12l40-60 40 60h-12v90h40v-24h12v-14l16-10 16 10v14h12v24h50V96h-10l30-58 30 58h-10v54h60v-30h-8l24-46 24 46h-8v30h68v60z'/%3E%3C/g%3E%3Cg fill='%23ffd76a' opacity='.55'%3E%3Crect x='51' y='128' width='8' height='12' rx='4'/%3E%3Crect x='164' y='104' width='8' height='14' rx='4'/%3E%3Crect x='354' y='80' width='12' height='18' rx='6'/%3E%3Crect x='354' y='116' width='12' height='18' rx='6' opacity='.7'/%3E%3Crect x='548' y='104' width='8' height='14' rx='4'/%3E%3Crect x='661' y='128' width='8' height='12' rx='4'/%3E%3Crect x='256' y='130' width='6' height='10' rx='3' opacity='.8'/%3E%3Crect x='458' y='130' width='6' height='10' rx='3' opacity='.8'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat-x; background-position: center bottom; background-size: auto 210px;
+}
+/* A moon and two candles in the corners. */
+[data-theme="wizard"] body::after {
+  inset: 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Ccircle cx='45' cy='45' r='38' fill='%23fff3c4' opacity='.12'/%3E%3Cpath d='M58 18a28 28 0 1 0 0 54a22 22 0 1 1 0-54z' fill='%23fbe7a6'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='130'%3E%3Ccircle cx='30' cy='22' r='20' fill='%23ffd76a' opacity='.18'/%3E%3Cpath d='M30 6c5 7 7 12 7 16a7 7 0 0 1-14 0c0-4 2-9 7-16z' fill='%23ffcf4a'/%3E%3Cpath d='M30 13c2 4 3 7 3 9a3 3 0 0 1-6 0c0-2 1-5 3-9z' fill='%23fff6d0'/%3E%3Crect x='29' y='28' width='2' height='5' fill='%23302040'/%3E%3Crect x='20' y='33' width='20' height='80' rx='3' fill='%23efe4cf'/%3E%3Cpath d='M20 40c4 0 4 8 8 8s2-8 6-8 6 4 6 4v-8H20z' fill='%23fff8ea'/%3E%3Crect x='12' y='110' width='36' height='10' rx='5' fill='%23c9a24a'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='130'%3E%3Ccircle cx='30' cy='22' r='20' fill='%23ffd76a' opacity='.18'/%3E%3Cpath d='M30 6c5 7 7 12 7 16a7 7 0 0 1-14 0c0-4 2-9 7-16z' fill='%23ffcf4a'/%3E%3Cpath d='M30 13c2 4 3 7 3 9a3 3 0 0 1-6 0c0-2 1-5 3-9z' fill='%23fff6d0'/%3E%3Crect x='29' y='28' width='2' height='5' fill='%23302040'/%3E%3Crect x='20' y='33' width='20' height='80' rx='3' fill='%23efe4cf'/%3E%3Cpath d='M20 40c4 0 4 8 8 8s2-8 6-8 6 4 6 4v-8H20z' fill='%23fff8ea'/%3E%3Crect x='12' y='110' width='36' height='10' rx='5' fill='%23c9a24a'/%3E%3C/svg%3E");
+  background-position: right 4% top 70px, left 1.5% bottom 18px, right 1.5% bottom 18px;
+  background-size: 90px 90px, 46px 100px, 46px 100px;
+}
+
+/* Phones: a lower, fainter castle, and no moon or candles, so nothing shows between the buttons. */
+@media (max-width: 900px) {
+  [data-theme="wizard"] body::before { height: 120px; background-size: auto 120px; opacity: 0.45; }
+  [data-theme="wizard"] body::after { display: none; }
+}
+
+/* ---------- Dragons & Dungeons: stone, torches and dragon scales ---------- */
+[data-theme="dragons"] {
+  --wP: url('./pieces/dragons/wP.svg'); --wN: url('./pieces/dragons/wN.svg'); --wB: url('./pieces/dragons/wB.svg');
+  --wR: url('./pieces/dragons/wR.svg'); --wQ: url('./pieces/dragons/wQ.svg'); --wK: url('./pieces/dragons/wK.svg');
+  --bP: url('./pieces/dragons/bP.svg'); --bN: url('./pieces/dragons/bN.svg'); --bB: url('./pieces/dragons/bB.svg');
+  --bR: url('./pieces/dragons/bR.svg'); --bQ: url('./pieces/dragons/bQ.svg'); --bK: url('./pieces/dragons/bK.svg');
+  --sq-light: #cbc3b4; --sq-dark: #7b7167;
+  /* Stone slabs: mortar lines between the squares. */
+  --board-extra: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80' preserveAspectRatio='none'%3E%3Cpath d='M10 0V80M20 0V80M30 0V80M40 0V80M50 0V80M60 0V80M70 0V80M0 10H80M0 20H80M0 30H80M0 40H80M0 50H80M0 60H80M0 70H80' stroke='%23302820' stroke-width='.5' opacity='.45'/%3E%3C/svg%3E");
+  --last-move: rgba(255, 160, 40, 0.5); --selected: rgba(255, 140, 30, 0.65);
+  --dest: rgba(255, 176, 60, 0.95); --dest-ring: rgba(40, 14, 4, 0.7);
+  --shape-edge: rgba(255, 248, 230, 0.95);
+  --coord-light: #3a2e24; --coord-dark: #f3e9d6;
+  --frame: #4a3b2e;
+  --bg: #211b17; --panel: #322822; --ink: #f6ead6; --muted: #cdb99c; --line: #5c4a3b;
+  --accent: #ef8a3c; --accent-ink: #1d1009; --bubble: #3f3229; --bubble-line: #6c5745;
+  --warn: #4a211a; --warn-line: #a3513b; --field: #29211c; --soft: #4a3c32; --hint-bg: #3f3229;
+  --best-bg: #4a3a1a; --best-ink: #ffcf6a; --best-line: #8d6b2b; --losing: #ff9a7c;
+  --overlay: rgba(28, 21, 17, 0.84);
+  --page-bg:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='80'%3E%3Cg fill='none' stroke='%23140f0c' stroke-width='3'%3E%3Cpath d='M0 1.5H160M0 41.5H160M50 0V40M130 0V40M10 40V80M90 40V80'/%3E%3C/g%3E%3Cg fill='%23ffffff' opacity='.03'%3E%3Crect x='3' y='4' width='44' height='34'/%3E%3Crect x='93' y='44' width='34' height='34'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 50% 0%, #3a2c22, #1c1612 70%);
+}
+/* Two wall torches with a warm glow. */
+[data-theme="dragons"] body::before {
+  inset: 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='220'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23ffb347' stop-opacity='.35'/%3E%3Cstop offset='1' stop-color='%23ffb347' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='60' cy='60' r='58' fill='url(%23g)'/%3E%3Cpath d='M60 24c12 14 16 24 16 32a16 16 0 0 1-32 0c0-8 4-18 16-32z' fill='%23ff8a2a'/%3E%3Cpath d='M60 38c6 8 8 13 8 18a8 8 0 0 1-16 0c0-5 2-10 8-18z' fill='%23ffd36a'/%3E%3Cpath d='M46 72h28l-6 14H52z' fill='%235a4030'/%3E%3Crect x='55' y='86' width='10' height='60' rx='3' fill='%234a3426'/%3E%3Crect x='44' y='146' width='32' height='10' rx='3' fill='%23302822'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='220'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23ffb347' stop-opacity='.35'/%3E%3Cstop offset='1' stop-color='%23ffb347' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='60' cy='60' r='58' fill='url(%23g)'/%3E%3Cpath d='M60 24c12 14 16 24 16 32a16 16 0 0 1-32 0c0-8 4-18 16-32z' fill='%23ff8a2a'/%3E%3Cpath d='M60 38c6 8 8 13 8 18a8 8 0 0 1-16 0c0-5 2-10 8-18z' fill='%23ffd36a'/%3E%3Cpath d='M46 72h28l-6 14H52z' fill='%235a4030'/%3E%3Crect x='55' y='86' width='10' height='60' rx='3' fill='%234a3426'/%3E%3Crect x='44' y='146' width='32' height='10' rx='3' fill='%23302822'/%3E%3C/svg%3E");
+  background-position: left 0.5% top 90px, right 0.5% top 90px;
+  background-size: 96px 176px, 96px 176px;
+}
+/* Phones: the torches would sit behind the board. */
+@media (max-width: 900px) {
+  [data-theme="dragons"] body::before { display: none; }
+}
+/* Faint scales on the panels. */
+[data-theme="dragons"] .coach,
+[data-theme="dragons"] .controls,
+[data-theme="dragons"] .picker-card {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='16'%3E%3Cpath d='M0 16a14 14 0 0 1 28 0M-14 8a14 14 0 0 1 28 0M14 8a14 14 0 0 1 28 0' fill='none' stroke='%23ffffff' stroke-opacity='.045' stroke-width='1.5'/%3E%3C/svg%3E");
+}
+
+/* ===== Christmas, Halloween, Space, Pirates & Ocean, Dinosaur Jungle, Ice Kingdom, Neon Arcade ===== */
+/* ---------- Christmas: snow, lights and trees, a red and green board ---------- */
+[data-theme="christmas"] {
+  --wP: url('./pieces/christmas/wP.svg'); --wN: url('./pieces/christmas/wN.svg'); --wB: url('./pieces/christmas/wB.svg'); --wR: url('./pieces/christmas/wR.svg'); --wQ: url('./pieces/christmas/wQ.svg'); --wK: url('./pieces/christmas/wK.svg');
+  --bP: url('./pieces/christmas/bP.svg'); --bN: url('./pieces/christmas/bN.svg'); --bB: url('./pieces/christmas/bB.svg'); --bR: url('./pieces/christmas/bR.svg'); --bQ: url('./pieces/christmas/bQ.svg'); --bK: url('./pieces/christmas/bK.svg');
+  --sq-light: #f2cfc6;
+  --sq-dark: #3f7d50;
+  --last-move: rgba(244, 196, 48, 0.55);
+  --selected: rgba(244, 196, 48, 0.7);
+  --dest: rgba(200, 32, 47, 0.95);
+  --dest-ring: rgba(255, 255, 255, 0.8);
+  --shape-edge: rgba(255, 255, 255, 0.95);
+  --coord-light: #7a2a2a;
+  --coord-dark: #f3e6d6;
+  --frame: #b3202c;
+  --bg: #eef4f6;
+  --panel: #ffffff;
+  --ink: #2a1a1a;
+  --muted: #6d5a55;
+  --line: #e3d6cf;
+  --accent: #b3202c;
+  --accent-ink: #ffffff;
+  --bubble: #eef6ef;
+  --bubble-line: #c9e0cd;
+  --warn: #fdecea;
+  --warn-line: #f0c2bd;
+  --field: #ffffff;
+  --soft: #ece4dc;
+  --hint-bg: #e6f2e8;
+  --best-bg: #fdf6dc;
+  --best-ink: #7a5b00;
+  --best-line: #efdfa6;
+  --losing: #a2262a;
+  --overlay: rgba(238, 244, 246, 0.86);
+  --page-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='210' viewBox='0 0 220 210'%3E%3Cg stroke='%238fb8cf' stroke-width='1.4' stroke-linecap='round' opacity='0.55'%3E%3Cpath d='M30 22v16M23 26l14 8M23 34l14-8'/%3E%3Cpath d='M130 70v12M125 73l10 6M125 79l10-6'/%3E%3Cpath d='M190 20v10M186 22.5l8 5M186 27.5l8-5'/%3E%3Cpath d='M80 130v16M73 134l14 8M73 142l14-8'/%3E%3Cpath d='M170 160v12M165 163l10 6M165 169l10-6'/%3E%3Cpath d='M20 180v10M16 182.5l8 5M16 187.5l8-5'/%3E%3C/g%3E%3Cg fill='%238fb8cf' opacity='0.55'%3E%3Ccircle cx='100' cy='30' r='1.6'/%3E%3Ccircle cx='60' cy='90' r='1.4'/%3E%3Ccircle cx='150' cy='120' r='1.6'/%3E%3Ccircle cx='120' cy='190' r='1.4'/%3E%3Ccircle cx='200' cy='100' r='1.2'/%3E%3C/g%3E%3C/svg%3E"), linear-gradient(#f6fafb, #e2edf2);
+}
+[data-theme="christmas"] header { padding-top: 34px; }
+[data-theme="christmas"] body::before {
+  position: absolute; left: 0; right: 0; top: 0; height: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='34' viewBox='0 0 120 34'%3E%3Cpath d='M0 4Q30 24 60 4T120 4' fill='none' stroke='%232c5a3a' stroke-width='2'/%3E%3Crect x='12.5' y='9' width='5' height='4' rx='1' fill='%236b6b6b'/%3E%3Cellipse cx='15' cy='18' rx='4.4' ry='6.4' fill='%23e3242b'/%3E%3Cellipse cx='13.6' cy='16' rx='1.2' ry='2' fill='%23fff' opacity='.6'/%3E%3Crect x='42.5' y='9' width='5' height='4' rx='1' fill='%236b6b6b'/%3E%3Cellipse cx='45' cy='18' rx='4.4' ry='6.4' fill='%23f4c430'/%3E%3Cellipse cx='43.6' cy='16' rx='1.2' ry='2' fill='%23fff' opacity='.6'/%3E%3Crect x='72.5' y='9' width='5' height='4' rx='1' fill='%236b6b6b'/%3E%3Cellipse cx='75' cy='18' rx='4.4' ry='6.4' fill='%232f9bd6'/%3E%3Cellipse cx='73.6' cy='16' rx='1.2' ry='2' fill='%23fff' opacity='.6'/%3E%3Crect x='102.5' y='9' width='5' height='4' rx='1' fill='%236b6b6b'/%3E%3Cellipse cx='105' cy='18' rx='4.4' ry='6.4' fill='%233fae6a'/%3E%3Cellipse cx='103.6' cy='16' rx='1.2' ry='2' fill='%23fff' opacity='.6'/%3E%3C/svg%3E"); background-repeat: repeat-x; background-size: 120px 34px;
+}
+[data-theme="christmas"] body::after {
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='130' viewBox='0 0 90 130'%3E%3Cpath d='M45 8L18 50h12L10 82h14L2 116h86L66 82h14L60 50h12Z' fill='%232e7d4a'/%3E%3Cpath d='M45 8L33 27h24ZM24 50h42l-6 6H30ZM16 82h58l-6 6H22Z' fill='%23ffffff' opacity='.85'/%3E%3Crect x='39' y='116' width='12' height='14' fill='%237a4a24'/%3E%3Cpath d='M45 0l2.6 5.4 5.8.8-4.2 4 1 5.8L45 13.2 39.8 16l1-5.8-4.2-4 5.8-.8z' fill='%23f4c430'/%3E%3Ccircle cx='36' cy='64' r='3.2' fill='%23e3242b'/%3E%3Ccircle cx='56' cy='70' r='3.2' fill='%23f4c430'/%3E%3Ccircle cx='30' cy='98' r='3.2' fill='%232f9bd6'/%3E%3Ccircle cx='52' cy='100' r='3.2' fill='%23e3242b'/%3E%3Ccircle cx='66' cy='104' r='3.2' fill='%23f4c430'/%3E%3Ccircle cx='46' cy='40' r='3' fill='%23e3242b'/%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='130' viewBox='0 0 90 130'%3E%3Cpath d='M45 8L18 50h12L10 82h14L2 116h86L66 82h14L60 50h12Z' fill='%232e7d4a'/%3E%3Cpath d='M45 8L33 27h24ZM24 50h42l-6 6H30ZM16 82h58l-6 6H22Z' fill='%23ffffff' opacity='.85'/%3E%3Crect x='39' y='116' width='12' height='14' fill='%237a4a24'/%3E%3Cpath d='M45 0l2.6 5.4 5.8.8-4.2 4 1 5.8L45 13.2 39.8 16l1-5.8-4.2-4 5.8-.8z' fill='%23f4c430'/%3E%3Ccircle cx='36' cy='64' r='3.2' fill='%23e3242b'/%3E%3Ccircle cx='56' cy='70' r='3.2' fill='%23f4c430'/%3E%3Ccircle cx='30' cy='98' r='3.2' fill='%232f9bd6'/%3E%3Ccircle cx='52' cy='100' r='3.2' fill='%23e3242b'/%3E%3Ccircle cx='66' cy='104' r='3.2' fill='%23f4c430'/%3E%3Ccircle cx='46' cy='40' r='3' fill='%23e3242b'/%3E%3C/svg%3E");
+  background-position: left 1% bottom 0, right 1% bottom 0; background-size: 90px 130px, 90px 130px;
+}
+@media (max-width: 900px) { [data-theme="christmas"] body::after { display: none; } }
+
+/* ---------- Halloween: an orange and black board, pumpkins and bats ---------- */
+[data-theme="halloween"] {
+  --wP: url('./pieces/halloween/wP.svg'); --wN: url('./pieces/halloween/wN.svg'); --wB: url('./pieces/halloween/wB.svg'); --wR: url('./pieces/halloween/wR.svg'); --wQ: url('./pieces/halloween/wQ.svg'); --wK: url('./pieces/halloween/wK.svg');
+  --bP: url('./pieces/halloween/bP.svg'); --bN: url('./pieces/halloween/bN.svg'); --bB: url('./pieces/halloween/bB.svg'); --bR: url('./pieces/halloween/bR.svg'); --bQ: url('./pieces/halloween/bQ.svg'); --bK: url('./pieces/halloween/bK.svg');
+  --sq-light: #f0a34a;
+  --sq-dark: #463656;
+  --last-move: rgba(166, 240, 74, 0.45);
+  --selected: rgba(166, 240, 74, 0.6);
+  --dest: rgba(170, 245, 80, 0.95);
+  --dest-ring: rgba(20, 8, 26, 0.75);
+  --shape-edge: rgba(255, 255, 255, 0.95);
+  --coord-light: #3a1d08;
+  --coord-dark: #f7e7c4;
+  --frame: #ff8c1a;
+  --bg: #170f1e;
+  --panel: #241a2e;
+  --ink: #f7efe4;
+  --muted: #c7b5c9;
+  --line: #43324f;
+  --accent: #ff8c1a;
+  --accent-ink: #1a0f05;
+  --bubble: #302240;
+  --bubble-line: #523d63;
+  --warn: #45201c;
+  --warn-line: #9a4a33;
+  --field: #1d1426;
+  --soft: #3a2b48;
+  --hint-bg: #302240;
+  --best-bg: #463815;
+  --best-ink: #ffd25e;
+  --best-line: #8a6a24;
+  --losing: #ff9a7c;
+  --overlay: rgba(23, 15, 30, 0.84);
+  --page-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='230' viewBox='0 0 240 230'%3E%3Cg fill='%234a3460'%3E%3Cpath transform='translate(20 30) scale(1)' d='M0 4C3 1 7 0 9 3C10 1 11 0 12 0C13 0 14 1 15 3C17 0 21 1 24 4C21 4 19 6 19 8C17 7 15 7 13 9C12 8 11 8 11 9C9 7 7 7 5 8C5 6 3 4 0 4Z'/%3E%3Cpath transform='translate(150 60) scale(0.8)' d='M0 4C3 1 7 0 9 3C10 1 11 0 12 0C13 0 14 1 15 3C17 0 21 1 24 4C21 4 19 6 19 8C17 7 15 7 13 9C12 8 11 8 11 9C9 7 7 7 5 8C5 6 3 4 0 4Z'/%3E%3Cpath transform='translate(90 140) scale(1.1)' d='M0 4C3 1 7 0 9 3C10 1 11 0 12 0C13 0 14 1 15 3C17 0 21 1 24 4C21 4 19 6 19 8C17 7 15 7 13 9C12 8 11 8 11 9C9 7 7 7 5 8C5 6 3 4 0 4Z'/%3E%3Cpath transform='translate(200 170) scale(0.7)' d='M0 4C3 1 7 0 9 3C10 1 11 0 12 0C13 0 14 1 15 3C17 0 21 1 24 4C21 4 19 6 19 8C17 7 15 7 13 9C12 8 11 8 11 9C9 7 7 7 5 8C5 6 3 4 0 4Z'/%3E%3Cpath transform='translate(40 200) scale(0.8)' d='M0 4C3 1 7 0 9 3C10 1 11 0 12 0C13 0 14 1 15 3C17 0 21 1 24 4C21 4 19 6 19 8C17 7 15 7 13 9C12 8 11 8 11 9C9 7 7 7 5 8C5 6 3 4 0 4Z'/%3E%3C/g%3E%3C/svg%3E"), radial-gradient(ellipse at 80% 0%, #3b2350, #170f1e 65%);
+}
+[data-theme="halloween"] body::before {
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Ccircle cx='60' cy='60' r='58' fill='%23ffd9a0' opacity='.08'/%3E%3Ccircle cx='60' cy='60' r='40' fill='%23ffd9a0' opacity='.12'/%3E%3Ccircle cx='60' cy='60' r='28' fill='%23f7e7c4'/%3E%3Ccircle cx='52' cy='54' r='5' fill='%23e6d2a6'/%3E%3Ccircle cx='68' cy='68' r='3.5' fill='%23e6d2a6'/%3E%3Ccircle cx='66' cy='48' r='2.5' fill='%23e6d2a6'/%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23c9b8d9' stroke-width='1' opacity='.35'%3E%3Cpath d='M0 0L120 120M0 0L60 130M0 0L130 60M0 0L20 140M0 0L140 20'/%3E%3Cpath d='M0 30Q14 22 28 28Q24 14 30 0M0 60Q30 46 56 56Q48 30 60 0M0 92Q46 70 84 84Q72 46 92 0M0 124Q60 96 112 112Q96 60 124 0'/%3E%3C/g%3E%3C/svg%3E");
+  background-position: right 3% top 64px, left 0 top 0; background-size: 120px 120px, 140px 140px;
+}
+[data-theme="halloween"] body::after {
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='110' height='86' viewBox='0 0 110 86'%3E%3Cpath d='M55 22C55 14 58 9 64 6' fill='none' stroke='%233d6b24' stroke-width='5' stroke-linecap='round'/%3E%3Cellipse cx='38' cy='54' rx='24' ry='28' fill='%23e86a10'/%3E%3Cellipse cx='72' cy='54' rx='24' ry='28' fill='%23e86a10'/%3E%3Cellipse cx='55' cy='54' rx='22' ry='30' fill='%23ff8a2a'/%3E%3Cpath d='M38 46l8-10 8 10zM58 46l8-10 8 10z' fill='%233a1a05'/%3E%3Cpath d='M34 62Q55 80 76 62L70 66L64 62L58 67L52 62L46 67L40 62Z' fill='%233a1a05'/%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='110' height='86' viewBox='0 0 110 86'%3E%3Cpath d='M55 22C55 14 58 9 64 6' fill='none' stroke='%233d6b24' stroke-width='5' stroke-linecap='round'/%3E%3Cellipse cx='38' cy='54' rx='24' ry='28' fill='%23e86a10'/%3E%3Cellipse cx='72' cy='54' rx='24' ry='28' fill='%23e86a10'/%3E%3Cellipse cx='55' cy='54' rx='22' ry='30' fill='%23ff8a2a'/%3E%3Cpath d='M38 46l8-10 8 10zM58 46l8-10 8 10z' fill='%233a1a05'/%3E%3Cpath d='M34 62Q55 80 76 62L70 66L64 62L58 67L52 62L46 67L40 62Z' fill='%233a1a05'/%3E%3C/svg%3E");
+  background-position: left 1% bottom 8px, right 1% bottom 8px; background-size: 110px 86px, 110px 86px;
+}
+@media (max-width: 900px) {
+  [data-theme="halloween"] body::after { display: none; }
+  [data-theme="halloween"] body::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23c9b8d9' stroke-width='1' opacity='.35'%3E%3Cpath d='M0 0L120 120M0 0L60 130M0 0L130 60M0 0L20 140M0 0L140 20'/%3E%3Cpath d='M0 30Q14 22 28 28Q24 14 30 0M0 60Q30 46 56 56Q48 30 60 0M0 92Q46 70 84 84Q72 46 92 0M0 124Q60 96 112 112Q96 60 124 0'/%3E%3C/g%3E%3C/svg%3E"); background-size: 100px 100px; }
+}
+
+/* ---------- Space: stars, planets and a board like a spaceship panel ---------- */
+[data-theme="space"] {
+  --wP: url('./pieces/space/wP.svg'); --wN: url('./pieces/space/wN.svg'); --wB: url('./pieces/space/wB.svg'); --wR: url('./pieces/space/wR.svg'); --wQ: url('./pieces/space/wQ.svg'); --wK: url('./pieces/space/wK.svg');
+  --bP: url('./pieces/space/bP.svg'); --bN: url('./pieces/space/bN.svg'); --bB: url('./pieces/space/bB.svg'); --bR: url('./pieces/space/bR.svg'); --bQ: url('./pieces/space/bQ.svg'); --bK: url('./pieces/space/bK.svg');
+  --sq-light: #c3ccd8;
+  --sq-dark: #4b5b75;
+  --board-extra: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cdefs%3E%3Cpattern id='p' width='1' height='1' patternUnits='userSpaceOnUse'%3E%3Crect x='.05' y='.05' width='.9' height='.9' rx='.04' fill='none' stroke='%230c1424' stroke-opacity='.35' stroke-width='.03'/%3E%3Crect x='.08' y='.08' width='.84' height='.84' rx='.03' fill='none' stroke='%23ffffff' stroke-opacity='.18' stroke-width='.02'/%3E%3Cg fill='%230c1424' fill-opacity='.35'%3E%3Ccircle cx='.13' cy='.13' r='.025'/%3E%3Ccircle cx='.87' cy='.13' r='.025'/%3E%3Ccircle cx='.13' cy='.87' r='.025'/%3E%3Ccircle cx='.87' cy='.87' r='.025'/%3E%3C/g%3E%3C/pattern%3E%3C/defs%3E%3Crect width='8' height='8' fill='url(%23p)'/%3E%3C/svg%3E");
+  --last-move: rgba(57, 208, 255, 0.45);
+  --selected: rgba(57, 208, 255, 0.6);
+  --dest: rgba(57, 214, 255, 0.95);
+  --dest-ring: rgba(6, 12, 28, 0.75);
+  --shape-edge: rgba(255, 255, 255, 0.95);
+  --coord-light: #1f2b40;
+  --coord-dark: #e6eef8;
+  --frame: #6b7c99;
+  --bg: #070b18;
+  --panel: #111a2e;
+  --ink: #eaf2ff;
+  --muted: #a3b3cf;
+  --line: #26375a;
+  --accent: #39d0ff;
+  --accent-ink: #04121f;
+  --bubble: #18243d;
+  --bubble-line: #2d4370;
+  --warn: #3a1f24;
+  --warn-line: #93485a;
+  --field: #0c1426;
+  --soft: #22314f;
+  --hint-bg: #18243d;
+  --best-bg: #3d3417;
+  --best-ink: #ffd25e;
+  --best-line: #86692a;
+  --losing: #ff9a86;
+  --overlay: rgba(7, 11, 24, 0.84);
+  --page-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250' viewBox='0 0 250 250'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='12' cy='20' r='1.2' opacity='0.9'/%3E%3Ccircle cx='70' cy='8' r='0.8' opacity='0.6'/%3E%3Ccircle cx='140' cy='30' r='1.4' opacity='0.8'/%3E%3Ccircle cx='210' cy='14' r='0.9' opacity='0.5'/%3E%3Ccircle cx='40' cy='80' r='0.9' opacity='0.6'/%3E%3Ccircle cx='110' cy='96' r='1.2' opacity='0.7'/%3E%3Ccircle cx='180' cy='70' r='0.8' opacity='0.5'/%3E%3Ccircle cx='230' cy='120' r='1.3' opacity='0.8'/%3E%3Ccircle cx='20' cy='150' r='1' opacity='0.6'/%3E%3Ccircle cx='90' cy='170' r='0.8' opacity='0.5'/%3E%3Ccircle cx='160' cy='190' r='1.4' opacity='0.8'/%3E%3Ccircle cx='220' cy='220' r='0.9' opacity='0.5'/%3E%3Ccircle cx='60' cy='230' r='1.2' opacity='0.7'/%3E%3Ccircle cx='130' cy='240' r='0.8' opacity='0.6'/%3E%3C/g%3E%3C/svg%3E"), radial-gradient(ellipse at 15% 20%, rgba(110, 60, 180, 0.35), transparent 50%), radial-gradient(ellipse at 85% 80%, rgba(30, 120, 200, 0.3), transparent 50%), #070b18;
+}
+[data-theme="space"] body::before {
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120' viewBox='0 0 160 120'%3E%3Cellipse cx='80' cy='60' rx='70' ry='16' fill='none' stroke='%23e0b07a' stroke-width='6' opacity='.55' transform='rotate(-18 80 60)'/%3E%3Ccircle cx='80' cy='60' r='34' fill='%23c98a52'/%3E%3Cpath d='M48 52Q80 44 112 54M47 64Q80 58 113 66M52 76Q80 72 108 78' stroke='%23a96a3a' stroke-width='5' fill='none'/%3E%3Cpath d='M10 82A70 16 -18 0 0 150 38' fill='none' stroke='%23f0c48e' stroke-width='6' opacity='.9' transform='rotate(0)'/%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Ccircle cx='40' cy='40' r='30' fill='%234a7bd4'/%3E%3Cpath d='M18 30Q30 22 42 30T64 30M14 46Q34 40 50 48T68 46' stroke='%2386b4f2' stroke-width='5' fill='none' opacity='.7'/%3E%3Ccircle cx='30' cy='30' r='26' fill='%23ffffff' opacity='.08'/%3E%3C/svg%3E");
+  background-position: right 2% top 70px, left 2% bottom 40px; background-size: 160px 120px, 80px 80px;
+}
+@media (max-width: 900px) { [data-theme="space"] body::before { display: none; } }
+
+/* ---------- Pirates & Ocean: a wooden deck, a treasure map and waves ---------- */
+[data-theme="pirates"] {
+  --wP: url('./pieces/pirates/wP.svg'); --wN: url('./pieces/pirates/wN.svg'); --wB: url('./pieces/pirates/wB.svg'); --wR: url('./pieces/pirates/wR.svg'); --wQ: url('./pieces/pirates/wQ.svg'); --wK: url('./pieces/pirates/wK.svg');
+  --bP: url('./pieces/pirates/bP.svg'); --bN: url('./pieces/pirates/bN.svg'); --bB: url('./pieces/pirates/bB.svg'); --bR: url('./pieces/pirates/bR.svg'); --bQ: url('./pieces/pirates/bQ.svg'); --bK: url('./pieces/pirates/bK.svg');
+  --sq-light: #e6c595;
+  --sq-dark: #9a6a3c;
+  --board-extra: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cdefs%3E%3Cpattern id='p' width='4' height='1' patternUnits='userSpaceOnUse'%3E%3Cpath d='M0 .02H4M0 .5H4' stroke='%233a2412' stroke-opacity='.35' stroke-width='.035'/%3E%3Cpath d='M1.5 .02V.5M3.3 .5V1' stroke='%233a2412' stroke-opacity='.35' stroke-width='.035'/%3E%3Cg fill='%233a2412' fill-opacity='.4'%3E%3Ccircle cx='1.42' cy='.26' r='.03'/%3E%3Ccircle cx='1.58' cy='.26' r='.03'/%3E%3Ccircle cx='3.22' cy='.75' r='.03'/%3E%3Ccircle cx='3.38' cy='.75' r='.03'/%3E%3C/g%3E%3C/pattern%3E%3C/defs%3E%3Crect width='8' height='8' fill='url(%23p)'/%3E%3C/svg%3E");
+  --last-move: rgba(64, 196, 230, 0.5);
+  --selected: rgba(64, 196, 230, 0.65);
+  --dest: rgba(40, 190, 230, 0.95);
+  --dest-ring: rgba(20, 12, 4, 0.7);
+  --shape-edge: rgba(255, 255, 255, 0.95);
+  --coord-light: #4a2c14;
+  --coord-dark: #fbeedb;
+  --frame: #5e3d1e;
+  --bg: #0c2c47;
+  --panel: #3a2616;
+  --ink: #f7ead2;
+  --muted: #d1b88f;
+  --line: #5e4128;
+  --accent: #f2c14e;
+  --accent-ink: #2b1a0e;
+  --bubble: #4a321e;
+  --bubble-line: #6e4c2e;
+  --warn: #4a221a;
+  --warn-line: #a3513b;
+  --field: #2e1e11;
+  --soft: #553a22;
+  --hint-bg: #4a321e;
+  --best-bg: #4a3a16;
+  --best-ink: #ffd970;
+  --best-line: #8f712b;
+  --losing: #ff9a7c;
+  --overlay: rgba(12, 30, 46, 0.84);
+  --page-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='60' viewBox='0 0 90 60'%3E%3Cpath d='M0 10Q15 2 30 10T60 10' fill='none' stroke='%23ffffff' stroke-opacity='.06' stroke-width='2'/%3E%3Cpath d='M30 40Q45 32 60 40T90 40' fill='none' stroke='%23ffffff' stroke-opacity='.05' stroke-width='2'/%3E%3C/svg%3E"), linear-gradient(#0f3a5e, #0a2a45 60%, #08223a);
+}
+[data-theme="pirates"] body::before {
+  left: 0; right: 0; bottom: 0; height: 80px; opacity: 0.85;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='80' viewBox='0 0 160 80'%3E%3Cpath d='M0 30Q20 14 40 30T80 30T120 30T160 30V80H0Z' fill='%231b5f8a'/%3E%3Cpath d='M0 46Q20 32 40 46T80 46T120 46T160 46V80H0Z' fill='%23134a6e'/%3E%3Cpath d='M0 30Q20 14 40 30T80 30T120 30T160 30' fill='none' stroke='%23a9dcf2' stroke-width='2.5' opacity='.7'/%3E%3Cpath d='M0 62Q20 50 40 62T80 62T120 62T160 62V80H0Z' fill='%230d3854'/%3E%3C/svg%3E"); background-repeat: repeat-x; background-position: left bottom; background-size: 160px 80px;
+}
+[data-theme="pirates"] body::after {
+  inset: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath d='M8 10L40 6L70 12L104 6L114 14L110 50L116 84L108 114L74 108L42 116L10 110L6 76L12 44Z' fill='%23ead6a6' stroke='%238a6a3a' stroke-width='2'/%3E%3Cpath d='M30 34C40 24 58 26 62 36C70 32 82 40 76 52C84 60 74 74 62 70C56 80 38 78 36 66C24 64 22 46 30 34Z' fill='%23b9c98a' stroke='%236c7a44' stroke-width='1.5'/%3E%3Cpath d='M18 98C30 92 34 82 44 74S58 62 66 54' fill='none' stroke='%238a3a2a' stroke-width='2' stroke-dasharray='4 4'/%3E%3Cpath d='M60 48l12 12M72 48l-12 12' stroke='%23c0281f' stroke-width='3.4' stroke-linecap='round'/%3E%3Cg transform='translate(94 92)' fill='%236a4a2a'%3E%3Cpath d='M0-12L3 0L0 12L-3 0Z'/%3E%3Cpath d='M-12 0L0-3L12 0L0 3Z' opacity='.7'/%3E%3C/g%3E%3C/svg%3E"); background-position: left 1% top 90px; background-size: 120px 120px;
+}
+@media (max-width: 900px) {
+  [data-theme="pirates"] body::before { height: 46px; background-size: 92px 46px; opacity: 0.6; }
+  [data-theme="pirates"] body::after { display: none; }
+}
+
+/* ---------- Dinosaur Jungle: leaves, rocks and footprints ---------- */
+[data-theme="dinosaur"] {
+  --wP: url('./pieces/dinosaur/wP.svg'); --wN: url('./pieces/dinosaur/wN.svg'); --wB: url('./pieces/dinosaur/wB.svg'); --wR: url('./pieces/dinosaur/wR.svg'); --wQ: url('./pieces/dinosaur/wQ.svg'); --wK: url('./pieces/dinosaur/wK.svg');
+  --bP: url('./pieces/dinosaur/bP.svg'); --bN: url('./pieces/dinosaur/bN.svg'); --bB: url('./pieces/dinosaur/bB.svg'); --bR: url('./pieces/dinosaur/bR.svg'); --bQ: url('./pieces/dinosaur/bQ.svg'); --bK: url('./pieces/dinosaur/bK.svg');
+  --sq-light: #ddcc9c;
+  --sq-dark: #6b8a45;
+  --last-move: rgba(255, 196, 60, 0.55);
+  --selected: rgba(255, 196, 60, 0.7);
+  --dest: rgba(255, 123, 46, 0.95);
+  --dest-ring: rgba(24, 14, 4, 0.7);
+  --shape-edge: rgba(255, 255, 255, 0.95);
+  --coord-light: #3d3a1c;
+  --coord-dark: #f4efd6;
+  --frame: #5a4126;
+  --bg: #13261a;
+  --panel: #1e3424;
+  --ink: #f0f5e6;
+  --muted: #b9c9a5;
+  --line: #35543c;
+  --accent: #f2b43c;
+  --accent-ink: #1c1405;
+  --bubble: #26402c;
+  --bubble-line: #3f6347;
+  --warn: #45261a;
+  --warn-line: #9a5a33;
+  --field: #18291d;
+  --soft: #2f4a35;
+  --hint-bg: #26402c;
+  --best-bg: #463815;
+  --best-ink: #ffd25e;
+  --best-line: #8a6a24;
+  --losing: #ff9a7c;
+  --overlay: rgba(15, 30, 20, 0.84);
+  --page-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='230' height='230' viewBox='0 0 230 230'%3E%3Cg fill='%23ffffff' opacity='.05'%3E%3Cg transform='translate(40 40) rotate(20)'%3E%3Cellipse cx='0' cy='4' rx='5' ry='6'/%3E%3Cellipse cx='-6' cy='-6' rx='2' ry='4.4' transform='rotate(-25 -6 -6)'/%3E%3Cellipse cx='0' cy='-8' rx='2' ry='4.6'/%3E%3Cellipse cx='6' cy='-6' rx='2' ry='4.4' transform='rotate(25 6 -6)'/%3E%3C/g%3E%3Cg transform='translate(70 90) rotate(30)'%3E%3Cellipse cx='0' cy='4' rx='5' ry='6'/%3E%3Cellipse cx='-6' cy='-6' rx='2' ry='4.4' transform='rotate(-25 -6 -6)'/%3E%3Cellipse cx='0' cy='-8' rx='2' ry='4.6'/%3E%3Cellipse cx='6' cy='-6' rx='2' ry='4.4' transform='rotate(25 6 -6)'/%3E%3C/g%3E%3Cg transform='translate(160 120) rotate(-10)'%3E%3Cellipse cx='0' cy='4' rx='5' ry='6'/%3E%3Cellipse cx='-6' cy='-6' rx='2' ry='4.4' transform='rotate(-25 -6 -6)'/%3E%3Cellipse cx='0' cy='-8' rx='2' ry='4.6'/%3E%3Cellipse cx='6' cy='-6' rx='2' ry='4.4' transform='rotate(25 6 -6)'/%3E%3C/g%3E%3Cg transform='translate(190 170) rotate(0)'%3E%3Cellipse cx='0' cy='4' rx='5' ry='6'/%3E%3Cellipse cx='-6' cy='-6' rx='2' ry='4.4' transform='rotate(-25 -6 -6)'/%3E%3Cellipse cx='0' cy='-8' rx='2' ry='4.6'/%3E%3Cellipse cx='6' cy='-6' rx='2' ry='4.4' transform='rotate(25 6 -6)'/%3E%3C/g%3E%3Cg transform='translate(30 200) rotate(40)'%3E%3Cellipse cx='0' cy='4' rx='5' ry='6'/%3E%3Cellipse cx='-6' cy='-6' rx='2' ry='4.4' transform='rotate(-25 -6 -6)'/%3E%3Cellipse cx='0' cy='-8' rx='2' ry='4.6'/%3E%3Cellipse cx='6' cy='-6' rx='2' ry='4.4' transform='rotate(25 6 -6)'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"), linear-gradient(#10241a, #1b3a24);
+}
+[data-theme="dinosaur"] body::before {
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cpath d='M10 190C20 110 70 40 190 10C170 110 110 170 10 190Z' fill='%232e6b34'/%3E%3Cpath d='M10 190C60 140 110 80 190 10M60 140L50 100M90 108L86 64M120 74L122 40M60 140L100 140M90 108L134 104M120 74L156 66' fill='none' stroke='%234f9a52' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cpath d='M10 190C20 110 70 40 190 10C170 110 110 170 10 190Z' fill='%23285e2e'/%3E%3Cpath d='M10 190C60 140 110 80 190 10M60 140L50 100M90 108L86 64M120 74L122 40M60 140L100 140M90 108L134 104M120 74L156 66' fill='none' stroke='%23448a47' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-position: left -30px top -30px, right -30px bottom -30px; background-size: 200px 200px, 220px 220px;
+}
+[data-theme="dinosaur"] body::after {
+  left: 0; right: 0; bottom: 0; height: 90px; opacity: 0.9;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='90' viewBox='0 0 200 90'%3E%3Cpath d='M0 90V60L18 48L40 52L56 38L82 44L96 58L118 50L140 56L160 46L180 54L200 50V90Z' fill='%231d2f20'/%3E%3Cpath d='M60 40Q64 20 58 6M60 40Q52 26 40 22M60 40Q70 28 82 26M150 50Q152 34 146 22M150 50Q160 40 170 38' fill='none' stroke='%232f5a32' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: repeat-x; background-position: left bottom; background-size: 200px 90px;
+}
+@media (max-width: 900px) {
+  [data-theme="dinosaur"] body::before { display: none; }
+  [data-theme="dinosaur"] body::after { height: 50px; background-size: 111px 50px; opacity: 0.6; }
+}
+
+/* ---------- Ice Kingdom: an ice board, snowflakes and the northern lights ---------- */
+[data-theme="ice"] {
+  --wP: url('./pieces/ice/wP.svg'); --wN: url('./pieces/ice/wN.svg'); --wB: url('./pieces/ice/wB.svg'); --wR: url('./pieces/ice/wR.svg'); --wQ: url('./pieces/ice/wQ.svg'); --wK: url('./pieces/ice/wK.svg');
+  --bP: url('./pieces/ice/bP.svg'); --bN: url('./pieces/ice/bN.svg'); --bB: url('./pieces/ice/bB.svg'); --bR: url('./pieces/ice/bR.svg'); --bQ: url('./pieces/ice/bQ.svg'); --bK: url('./pieces/ice/bK.svg');
+  --sq-light: #d3e8f5;
+  --sq-dark: #79acd3;
+  --board-extra: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cg stroke='%23ffffff' stroke-opacity='.28' stroke-width='.05' stroke-linecap='round'%3E%3Cpath d='M.2 1.4L1.4 .2M2.3 1.6L3.6 .3M4.6 1.2L5.6 .2M6.3 1.7L7.7 .3M.4 3.6L1.6 2.4M2.6 3.7L3.8 2.5M4.4 3.5L5.7 2.2M6.5 3.6L7.6 2.5M.3 5.7L1.5 4.5M2.4 5.6L3.6 4.4M4.6 5.8L5.8 4.6M6.4 5.5L7.6 4.3M.5 7.6L1.7 6.4M2.3 7.7L3.5 6.5M4.5 7.5L5.7 6.3M6.6 7.7L7.7 6.6'/%3E%3C/g%3E%3C/svg%3E");
+  --last-move: rgba(255, 214, 80, 0.55);
+  --selected: rgba(255, 214, 80, 0.7);
+  --dest: rgba(166, 77, 224, 0.95);
+  --dest-ring: rgba(255, 255, 255, 0.8);
+  --shape-edge: rgba(255, 255, 255, 0.95);
+  --coord-light: #2a557e;
+  --coord-dark: #f2fbff;
+  --frame: #bfe3f7;
+  --bg: #0b1834;
+  --panel: #13264a;
+  --ink: #eef8ff;
+  --muted: #a9c4df;
+  --line: #2a4672;
+  --accent: #8fe3ff;
+  --accent-ink: #0b1834;
+  --bubble: #1a3160;
+  --bubble-line: #33548a;
+  --warn: #3a2140;
+  --warn-line: #8f4f86;
+  --field: #0f1f3e;
+  --soft: #23406e;
+  --hint-bg: #1a3160;
+  --best-bg: #3d3417;
+  --best-ink: #ffd25e;
+  --best-line: #86692a;
+  --losing: #ff9fb0;
+  --overlay: rgba(11, 24, 52, 0.84);
+  --page-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='210' viewBox='0 0 220 210'%3E%3Cg stroke='%23ffffff' stroke-width='1.4' stroke-linecap='round' opacity='0.18'%3E%3Cpath d='M30 22v16M23 26l14 8M23 34l14-8'/%3E%3Cpath d='M130 70v12M125 73l10 6M125 79l10-6'/%3E%3Cpath d='M190 20v10M186 22.5l8 5M186 27.5l8-5'/%3E%3Cpath d='M80 130v16M73 134l14 8M73 142l14-8'/%3E%3Cpath d='M170 160v12M165 163l10 6M165 169l10-6'/%3E%3Cpath d='M20 180v10M16 182.5l8 5M16 187.5l8-5'/%3E%3C/g%3E%3Cg fill='%23ffffff' opacity='0.18'%3E%3Ccircle cx='100' cy='30' r='1.6'/%3E%3Ccircle cx='60' cy='90' r='1.4'/%3E%3Ccircle cx='150' cy='120' r='1.6'/%3E%3Ccircle cx='120' cy='190' r='1.4'/%3E%3Ccircle cx='200' cy='100' r='1.2'/%3E%3C/g%3E%3C/svg%3E"), linear-gradient(#0a1530, #12285a);
+}
+[data-theme="ice"] body::before {
+  left: 0; right: 0; top: 0; height: 240px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='240' viewBox='0 0 800 240'%3E%3Cdefs%3E%3Cfilter id='b' x='-20%' y='-50%' width='140%' height='200%'%3E%3CfeGaussianBlur stdDeviation='14'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23b)' fill='none' stroke-linecap='round'%3E%3Cpath d='M-20 90C120 30 240 140 380 70S640 30 820 90' stroke='%233fe0b0' stroke-width='34' opacity='.45'/%3E%3Cpath d='M-20 140C140 90 260 170 420 120S660 100 820 150' stroke='%238a6af0' stroke-width='26' opacity='.35'/%3E%3C/g%3E%3C/svg%3E"); background-repeat: repeat-x; background-size: 800px 240px;
+}
+[data-theme="ice"] body::after {
+  left: 0; right: 0; bottom: 0; height: 120px; opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120' viewBox='0 0 300 120'%3E%3Cpath d='M0 120V80L40 40L64 62L100 20L140 70L170 46L210 86L240 56L270 80L300 50V120Z' fill='%23c9e6f7' opacity='.9'/%3E%3Cpath d='M100 20L88 48L100 42L112 52ZM40 40L32 56L42 52L50 58ZM240 56L232 70L242 66L250 72Z' fill='%23ffffff'/%3E%3Cpath d='M0 120V96L50 72L90 92L130 74L180 98L230 80L270 96L300 86V120Z' fill='%239fcbe8'/%3E%3C/svg%3E"); background-repeat: repeat-x; background-position: left bottom; background-size: 300px 120px;
+}
+@media (max-width: 900px) {
+  [data-theme="ice"] body::before { opacity: 0.6; }
+  [data-theme="ice"] body::after { height: 60px; background-size: 150px 60px; opacity: 0.3; }
+}
+
+/* ---------- Neon Arcade: a dark screen, glowing lines and pixel pieces ---------- */
+[data-theme="neon"] {
+  --wP: url('./pieces/neon/wP.svg'); --wN: url('./pieces/neon/wN.svg'); --wB: url('./pieces/neon/wB.svg'); --wR: url('./pieces/neon/wR.svg'); --wQ: url('./pieces/neon/wQ.svg'); --wK: url('./pieces/neon/wK.svg');
+  --bP: url('./pieces/neon/bP.svg'); --bN: url('./pieces/neon/bN.svg'); --bB: url('./pieces/neon/bB.svg'); --bR: url('./pieces/neon/bR.svg'); --bQ: url('./pieces/neon/bQ.svg'); --bK: url('./pieces/neon/bK.svg');
+  --sq-light: #2b2756;
+  --sq-dark: #15132e;
+  --board-extra: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cg fill='none' stroke='%232ff3ff' stroke-opacity='.35' stroke-width='.035'%3E%3Cpath d='M1 0V8M2 0V8M3 0V8M4 0V8M5 0V8M6 0V8M7 0V8M0 1H8M0 2H8M0 3H8M0 4H8M0 5H8M0 6H8M0 7H8'/%3E%3C/g%3E%3Crect x='.03' y='.03' width='7.94' height='7.94' fill='none' stroke='%23ff4fd8' stroke-width='.06'/%3E%3C/svg%3E");
+  --last-move: rgba(255, 230, 60, 0.35);
+  --selected: rgba(255, 230, 60, 0.5);
+  --dest: rgba(255, 230, 60, 0.95);
+  --dest-ring: rgba(0, 0, 0, 0.7);
+  --shape-edge: rgba(255, 255, 255, 0.95);
+  --coord-light: #9aa0ff;
+  --coord-dark: #9aa0ff;
+  --frame: #2ff3ff;
+  --bg: #0b0a1a;
+  --panel: #15132e;
+  --ink: #f2f0ff;
+  --muted: #a9a4d9;
+  --line: #35307a;
+  --accent: #ff4fd8;
+  --accent-ink: #1a0518;
+  --bubble: #1f1b45;
+  --bubble-line: #3e3890;
+  --warn: #3a1430;
+  --warn-line: #a03a80;
+  --field: #100e26;
+  --soft: #2a2660;
+  --hint-bg: #1f1b45;
+  --best-bg: #3a3410;
+  --best-ink: #ffe63c;
+  --best-line: #8a7a20;
+  --losing: #ff8aa0;
+  --overlay: rgba(11, 10, 26, 0.86);
+  --page-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill='%237a6cff' opacity='.35'%3E%3Crect x='10' y='10' width='2' height='2'/%3E%3Crect x='60' y='40' width='2' height='2'/%3E%3Crect x='30' y='70' width='2' height='2'/%3E%3Crect x='80' y='90' width='2' height='2'/%3E%3C/g%3E%3C/svg%3E"), linear-gradient(#0b0a1a, #120f2e 70%, #1d0f33);
+}
+[data-theme="neon"] body::before {
+  left: 0; right: 0; bottom: 0; height: 220px; opacity: 0.55;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='220' viewBox='0 0 1200 220' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='g'%3E%3CfeGaussianBlur stdDeviation='1.6'/%3E%3C/filter%3E%3C/defs%3E%3Cg stroke='%23ff4fd8' fill='none'%3E%3Cg stroke-width='2' filter='url(%23g)' opacity='.9'%3E%3Cpath d='M0 40H1200'/%3E%3Cpath d='M0 54H1200'/%3E%3Cpath d='M0 72H1200'/%3E%3Cpath d='M0 96H1200'/%3E%3Cpath d='M0 128H1200'/%3E%3Cpath d='M0 170H1200'/%3E%3Cpath d='M0 220H1200'/%3E%3Cpath d='M600 0L-1800 220'/%3E%3Cpath d='M600 0L-1600 220'/%3E%3Cpath d='M600 0L-1400 220'/%3E%3Cpath d='M600 0L-1200 220'/%3E%3Cpath d='M600 0L-1000 220'/%3E%3Cpath d='M600 0L-800 220'/%3E%3Cpath d='M600 0L-600 220'/%3E%3Cpath d='M600 0L-400 220'/%3E%3Cpath d='M600 0L-200 220'/%3E%3Cpath d='M600 0L0 220'/%3E%3Cpath d='M600 0L200 220'/%3E%3Cpath d='M600 0L400 220'/%3E%3Cpath d='M600 0L600 220'/%3E%3Cpath d='M600 0L800 220'/%3E%3Cpath d='M600 0L1000 220'/%3E%3Cpath d='M600 0L1200 220'/%3E%3Cpath d='M600 0L1400 220'/%3E%3Cpath d='M600 0L1600 220'/%3E%3Cpath d='M600 0L1800 220'/%3E%3Cpath d='M600 0L2000 220'/%3E%3Cpath d='M600 0L2200 220'/%3E%3Cpath d='M600 0L2400 220'/%3E%3Cpath d='M600 0L2600 220'/%3E%3Cpath d='M600 0L2800 220'/%3E%3Cpath d='M600 0L3000 220'/%3E%3C/g%3E%3Cpath d='M0 40H1200' stroke='%232ff3ff' stroke-width='2.5'/%3E%3C/g%3E%3C/svg%3E"); background-size: 100% 220px;
+}
+@media (max-width: 900px) { [data-theme="neon"] body::before { height: 110px; background-size: 100% 110px; opacity: 0.35; } }
+[data-theme="neon"] .cg-wrap piece.white { filter: drop-shadow(0 0 2px rgba(47, 243, 255, 0.8)); }
+[data-theme="neon"] .cg-wrap piece.black { filter: drop-shadow(0 0 2px rgba(255, 79, 216, 0.85)); }
+[data-theme="neon"] h1 { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: 0.04em; text-shadow: 0 0 8px rgba(255, 79, 216, 0.7); }
+[data-theme="neon"] .board-wrap .board { box-shadow: 0 0 0 3px #2ff3ff, 0 0 18px rgba(47, 243, 255, 0.55); }
+@media (max-width: 600px) { [data-theme="neon"] h1 { font-family: inherit; letter-spacing: -0.01em; } }
+/* ===== End of these seven themes ===== */
+
+/* ---------- Theme picker ---------- */
+.theme-btn {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 999px; height: 34px; padding: 0 14px;
+  font: inherit; font-size: 0.9rem; font-weight: 700; color: var(--ink); cursor: pointer;
+}
+.theme-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.theme-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px; text-align: center;
+  font: inherit; font-weight: 700; color: var(--ink); background: var(--bg); background-image: var(--page-bg, none);
+  border: 3px solid var(--line); border-radius: 16px; cursor: pointer;
+}
+.theme-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent); }
+.theme-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.theme-mini {
+  display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; max-width: 150px; aspect-ratio: 1 / 1;
+  border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 3px var(--frame, transparent), 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+.theme-mini span { background: var(--sq-light); }
+.theme-mini span.dark { background: var(--sq-dark); }
+.theme-mini piece { position: static; display: block; width: 100%; height: 100%; background-size: cover; }
+.theme-card strong { font-size: 1rem; line-height: 1.2; }
+
+@media (max-width: 600px) {
+  .theme-btn { padding: 0 10px; }
+  .theme-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .theme-card { padding: 8px; }
+}

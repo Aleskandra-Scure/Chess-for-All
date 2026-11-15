@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-GB">
+<html lang="en-GB" data-theme="classic">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="./vendor/chessground/chessground.brown.css">
   <link rel="stylesheet" href="./vendor/chessground/chessground.cburnett.css">
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./themes.css">
 </head>
 <body>
   <header>
@@ -27,6 +28,7 @@
       <button data-mode="learn" aria-pressed="false"><span aria-hidden="true">&#127891;</span> <span data-i18n="modeLearn">Learn</span></button>
     </div>
     <div class="header-tools">
+      <button id="themeButton" class="theme-btn"><span aria-hidden="true">&#127912;</span> <span data-i18n="themeButton">Theme</span></button>
       <button id="aboutButton" class="about-btn" data-i18n="aboutButton">About</button>
       <button id="sound" class="sound" aria-pressed="true">🔊</button>
     </div>
@@ -269,6 +271,17 @@
         <button id="pickerClose" class="picker-close">✕</button>
       </div>
       <div id="coachCards" class="coach-cards"></div>
+    </div>
+  </div>
+
+  <div id="themePicker" class="picker" hidden>
+    <div id="themeBackdrop" class="picker-backdrop"></div>
+    <div class="picker-card" role="dialog" aria-labelledby="themeTitle">
+      <div class="picker-head">
+        <h2 id="themeTitle" data-i18n="chooseTheme">Choose a theme</h2>
+        <button id="themeClose" class="picker-close">✕</button>
+      </div>
+      <div id="themeCards" class="theme-cards"></div>
     </div>
   </div>
 

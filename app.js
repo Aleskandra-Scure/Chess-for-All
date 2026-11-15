@@ -5,6 +5,7 @@ import { COACHES, DEFAULT_COACH, MOODS, coachById, coachImage } from './coaches.
 import { createPuzzles } from './puzzles.js';
 import { createLearn } from './learn.js';
 import { initAbout } from './about.js';
+import { initThemes, currentTheme } from './themes.js';
 import { openingsReady, openingOf, openingFamily } from './openings.js';
 import { engineReady, judgeMove, computerMove, evaluate, hintFor, piecesInDanger, uciToMove, PIECE } from './analysis.js';
 import * as lines from './coach-lines.js';
@@ -1310,6 +1311,7 @@ $('newGame').addEventListener('click', newGame);
 applyTexts();
 refreshFriendControls();
 initAbout(t);
+initThemes(t);
 
 // Offline: the service worker keeps the page's own files so it opens without internet.
 if ('serviceWorker' in navigator && window.isSecureContext) {
@@ -1339,4 +1341,5 @@ window.chessForAll = {
   get vsFriend() { return vsFriend; },
   get orientation() { return cg.state.orientation; },
   get status() { return $('status').textContent; },
+  get theme() { return currentTheme(); },
 };

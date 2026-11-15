@@ -10,6 +10,11 @@ play against the computer with a friendly coach, or solve chess puzzles.
 - **Hint** (first the piece, then the move and what it does), **Show best moves**, unlimited
   **Undo**, a choice of piece when a pawn promotes, and an **advantage bar** (on by default).
 - **Opening names** from the Lichess opening book, with a 📖 mark for book moves.
+- **Ten themes** (button *Theme*): Classic, Wizard Academy, Dragons & Dungeons, Christmas,
+  Halloween, Space, Pirates & Ocean, Dinosaur Jungle, Ice Kingdom and Neon Arcade. Each one changes
+  the board, the page, the buttons and panels, and has its own set of pieces. The look changes at
+  once, even in the middle of a game; like everything else it is not saved, so the page always
+  opens with Classic.
 - **Five coaches** with faces that change with the game, and a voice (the device's own British
   English voice, with a mute button). The coach talks in short sentences picked from ready-made
   variants and filled in with facts worked out by chess.js and Stockfish. There is no AI and no
@@ -94,6 +99,8 @@ files. They switch over the next time the page is opened.
 | File | What it does |
 |---|---|
 | `index.html`, `style.css` | The page |
+| `themes.js`, `themes.css` | The ten themes: colours of the page and board, decorations and piece sets |
+| `pieces/` | The piece pictures of each theme (`classic/` holds the cburnett pieces) |
 | `app.js` | The game against the computer, the coach, help levels, hint, undo |
 | `puzzles.js` | Puzzle mode and the Easy / Medium / Hard levels |
 | `analysis.js` | Move grades, pieces in danger and facts about moves (chess.js + Stockfish) |
