@@ -170,6 +170,18 @@ export async function computerMove(fen, level) {
   return best;
 }
 
+// The Ranked computer's move (ranked.js): its own strength for each floor of the tower,
+// cfg = { skill, depth, random } like LEVELS.
+export async function rankedMove(fen, cfg) {
+  const c = new Chess(fen);
+  if (Math.random() < cfg.random) {
+    const moves = c.moves({ verbose: true });
+    return uciOf(moves[Math.floor(Math.random() * moves.length)]);
+  }
+  const { best } = await engine.search(fen, { depth: cfg.depth, skill: cfg.skill });
+  return best;
+}
+
 // ---------- Opponents with a playing style (opponents.js) ----------
 
 // How far (centipawns) a move chosen for its style may be from the move the level would play anyway.

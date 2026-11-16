@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chess for All</title>
-  <meta name="description" content="A free chess game for children with a friendly coach. Works offline, saves nothing.">
+  <meta name="description" content="A free chess game for children with a friendly coach. Works offline and sends nothing anywhere.">
   <meta name="referrer" content="no-referrer">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="icon" href="./favicon-32.png" sizes="32x32" type="image/png">
@@ -26,6 +26,7 @@
       <button data-mode="play" aria-pressed="true"><span aria-hidden="true">&#9822;</span> <span data-i18n="modePlay">Play</span></button>
       <button data-mode="puzzles" aria-pressed="false"><span aria-hidden="true">&#129513;</span> <span data-i18n="modePuzzles">Puzzles</span></button>
       <button data-mode="learn" aria-pressed="false"><span aria-hidden="true">&#127891;</span> <span data-i18n="modeLearn">Learn</span></button>
+      <button data-mode="ranked" aria-pressed="false"><span aria-hidden="true">&#127942;</span> <span data-i18n="modeRanked">Ranked</span></button>
     </div>
     <div class="header-tools">
       <button id="themeButton" class="theme-btn"><span aria-hidden="true">&#127912;</span> <span data-i18n="themeButton">Theme</span></button>
@@ -235,6 +236,95 @@
       </div>
     </section>
 
+    <section id="rankedView" class="play ranked-view" hidden>
+      <div id="rkPick" class="rk-screen">
+        <h2 class="rk-title" data-i18n="rankedChoose">Choose a time control</h2>
+        <p class="rk-lead" data-i18n="rankedChooseAbout"></p>
+        <div id="rkCards" class="rk-cards"></div>
+        <p class="rk-note" data-i18n="rankedNote"></p>
+        <p id="rkStorageNote" class="rk-note warn" data-i18n="rankedNoStorage" hidden></p>
+      </div>
+
+      <div id="rkTowerScreen" class="rk-screen" hidden>
+        <div class="rk-tower-head">
+          <h2 id="rkTcName" class="rk-title"></h2>
+          <p id="rkTcAbout" class="rk-lead"></p>
+        </div>
+        <div id="rkTowerBox" class="rk-tower-box">
+          <div class="rk-battlements" aria-hidden="true"></div>
+          <ol id="rkTower" class="rk-tower"></ol>
+        </div>
+        <div class="rk-info">
+          <p class="rk-here-line"><span data-i18n="rankedYouAreHere">You are here</span>: <strong id="rkHereName"></strong></p>
+          <div id="rkHereBar"></div>
+          <p id="rkNext" class="rk-next"></p>
+          <p id="rkShield" class="rk-shield" hidden></p>
+          <dl class="rk-stats">
+            <div><dt data-i18n="rankedWins">Wins</dt><dd id="rkWins">0</dd></div>
+            <div><dt data-i18n="rankedDraws">Draws</dt><dd id="rkDraws">0</dd></div>
+            <div><dt data-i18n="rankedLosses">Losses</dt><dd id="rkLosses">0</dd></div>
+          </dl>
+          <div class="setting">
+            <span data-i18n="youPlay">You play</span>
+            <div class="segmented" role="group">
+              <button data-rk-colour="w" data-i18n="rankedColours.w">White</button>
+              <button data-rk-colour="random" data-i18n="rankedColours.random">Random</button>
+              <button data-rk-colour="b" data-i18n="rankedColours.b">Black</button>
+            </div>
+          </div>
+          <p id="rkUnfinished" class="rk-unfinished" data-i18n="rankedUnfinished" hidden></p>
+          <button id="rkPlay" class="big primary rk-play"><span aria-hidden="true">&#9654;</span> <span data-i18n="rankedPlay">Play</span></button>
+          <div class="rk-more">
+            <button id="rkChange" class="big secondary" data-i18n="rankedChange">Change time control</button>
+            <button id="rkReset" class="big secondary" data-i18n="rankedReset">Reset progress</button>
+          </div>
+          <p class="rk-note" data-i18n="rankedNote"></p>
+          <p id="rkStorageNote2" class="rk-note warn" data-i18n="rankedNoStorage" hidden></p>
+        </div>
+      </div>
+
+      <div id="rkGame" class="rk-screen" hidden>
+        <p id="rkGameTc" class="rk-game-tc"></p>
+        <div id="rkClockThem" class="rk-clock">
+          <span class="rk-who"><strong id="rkThemName"></strong> <span id="rkThemRank" class="rk-who-rank"></span></span>
+          <span class="rk-time">0:00</span><span class="rk-nolimit" data-i18n="rankedNoClock" hidden>No clock</span>
+        </div>
+        <div class="board-wrap">
+          <div id="rkBoard" class="board"></div>
+          <div id="rkPromo" class="promo" hidden>
+            <div class="promo-backdrop"></div>
+            <div class="promo-card" role="dialog">
+              <button class="promo-btn" data-promo="q"><span class="cg-wrap promo-icon"><piece class="queen"></piece></span><span data-i18n="queen">Queen</span></button>
+              <button class="promo-btn" data-promo="r"><span class="cg-wrap promo-icon"><piece class="rook"></piece></span><span data-i18n="rook">Rook</span></button>
+              <button class="promo-btn" data-promo="b"><span class="cg-wrap promo-icon"><piece class="bishop"></piece></span><span data-i18n="bishop">Bishop</span></button>
+              <button class="promo-btn" data-promo="n"><span class="cg-wrap promo-icon"><piece class="knight"></piece></span><span data-i18n="knight">Knight</span></button>
+            </div>
+          </div>
+          <div id="rkEnd" class="pz-start" hidden>
+            <div class="pz-start-card rk-end-card">
+              <h2 id="rkEndTitle" class="rk-end-title"></h2>
+              <p id="rkEndReason" class="rk-end-reason"></p>
+              <p id="rkEndChange" class="rk-end-change"></p>
+              <p id="rkEndRank" class="rk-end-rank"></p>
+              <div id="rkEndBar"></div>
+              <div class="pz-start-buttons">
+                <button id="rkAgain" class="big primary"><span aria-hidden="true">&#8635;</span> <span data-i18n="rankedPlayAgain">Play again</span></button>
+                <button id="rkBack" class="big secondary"><span aria-hidden="true">&#127942;</span> <span data-i18n="rankedBackTower">Back to the tower</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="rkClockMe" class="rk-clock">
+          <span class="rk-who"><strong id="rkMeName"></strong></span>
+          <span class="rk-time">0:00</span><span class="rk-nolimit" data-i18n="rankedNoClock" hidden>No clock</span>
+        </div>
+        <p id="rkStatus" class="status"></p>
+        <div class="hint-row">
+          <button id="rkResign" class="hint-btn undo-btn"><span aria-hidden="true">&#9873;</span> <span data-i18n="rankedResign">Resign</span></button>
+        </div>
+      </div>
+    </section>
+
     <aside class="side">
       <div class="coach">
         <div class="coach-side">
@@ -328,7 +418,7 @@
   </main>
 
   <footer>
-    <span data-i18n="footer">Free for everyone. Nothing is saved and nothing is sent anywhere.</span>
+    <span data-i18n="footer">Free for everyone. Only Ranked progress is kept on this device, and nothing is sent anywhere.</span>
     <a href="./CREDITS.md" data-i18n="credits">Credits and licences</a>
   </footer>
 
@@ -367,6 +457,17 @@
         <button id="themeClose" class="picker-close">✕</button>
       </div>
       <div id="themeCards" class="theme-cards"></div>
+    </div>
+  </div>
+
+  <div id="rkConfirm" class="picker" hidden>
+    <div id="rkConfirmBackdrop" class="picker-backdrop"></div>
+    <div class="picker-card rk-confirm-card" role="alertdialog" aria-labelledby="rkConfirmText">
+      <p id="rkConfirmText" class="rk-confirm-text"></p>
+      <div class="rk-confirm-buttons">
+        <button id="rkConfirmYes" class="big primary"></button>
+        <button id="rkConfirmNo" class="big secondary"></button>
+      </div>
     </div>
   </div>
 

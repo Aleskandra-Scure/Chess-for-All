@@ -31,7 +31,7 @@ play against the computer with a friendly coach, or solve chess puzzles.
 - **Ten themes** (button *Theme*): Classic, Wizard Academy, Dragons & Dungeons, Christmas,
   Halloween, Space, Pirates & Ocean, Dinosaur Jungle, Ice Kingdom and Neon Arcade. Each one changes
   the board, the page, the buttons and panels, and has its own set of pieces. The look changes at
-  once, even in the middle of a game; like everything else it is not saved, so the page always
+  once, even in the middle of a game; it is not saved, so the page always
   opens with Classic.
 - **Five coaches** with faces that change with the game, and a voice (the device's own British
   English voice, with a mute button). The coach talks in short sentences picked from ready-made
@@ -52,6 +52,39 @@ play against the computer with a friendly coach, or solve chess puzzles.
   comes after a win by checkmate, a solved puzzle, a finished lesson and the end of Puzzle Rush
   (a bigger one for a new best). The sound button mutes both the sounds and the voices. Confetti is
   left out when the device asks for reduced motion.
+- **Ranked** (the fourth tab): climb a tower of 18 floors, from Pawn I at the bottom to King III at
+  the top (Pawn, Knight, Bishop, Rook, Queen and King, each in three steps I, II and III).
+  - **Time controls:** Bullet 2 | 1, Blitz 3 | 2, Blitz 5 | 3, Rapid 10 min, Rapid 15 | 10 and No
+    limit ("X | Y" means X minutes for the game plus Y seconds after each move). Each one has its
+    own tower and its own progress.
+  - **The game:** no coach, no help levels, hints, arrows, move marks, pause after a mistake or
+    undo, and no advantage bar. The child chooses White, Black or Random. Two clocks; the clock
+    starts after White's first move; the last 10 seconds are red and tick. Running out of time
+    loses, unless the other side has too little left to ever checkmate (then it is a draw).
+    The computer has a clock too, but answers quickly. Resigning counts as a loss.
+  - **Progress:** no numbers are shown. A win clearly fills the bar of the floor, a draw fills it
+    a little (0.4 of a win) and a loss takes a little away (half a win). A full bar moves the child
+    up ("Promoted to …", with confetti and a sound, and the pawn walks up the tower). A loss on an
+    empty bar moves them down one floor (landing with half a bar), except for the first two losses
+    after moving up; Pawn I is the lowest floor. A flag marks the highest floor reached.
+  - **Strength:** depends only on the floor, the same in every time control. Pawn I is weaker
+    than opponent level 1, King III plays exactly like level 10 (Ember).
+  - **Saved on the device:** only Ranked keeps anything (see Privacy). When the app is hidden or
+    closed the clock stops and the game is kept, so it can be finished later; starting a new game
+    then asks whether to finish the old one or resign it (a loss). *Reset progress* clears one
+    time control.
+
+| Floors | Stockfish Skill Level | Depth | Random moves | Wins to move up |
+|---|---|---|---|---|
+| Pawn I · II · III | 0 · 0 · 0 | 1 · 1 · 1 | 65% · 50% · 40% | 2 each |
+| Knight I · II · III | 0 · 0 · 1 | 1 · 2 · 2 | 30% · 22% · 15% | 3 each |
+| Bishop I · II · III | 2 · 3 · 4 | 3 · 3 · 4 | 10% · 5% · 2% | 3 each |
+| Rook I · II · III | 5 · 6 · 8 | 4 · 5 · 6 | 0% | 4 each |
+| Queen I · II · III | 10 · 11 · 13 | 7 · 8 · 9 | 0% | 4 each |
+| King I · II · III | 14 · 17 · 20 | 10 · 12 · 14 | 0% | 5 each (King III is the top) |
+
+Pawn II, Knight I, Knight III, Bishop II, Rook I, Rook III, Queen II, King I, King II and King III
+have exactly the settings of opponent levels 1–10; the floors in between are halfway steps.
 
 | Puzzle level | Lichess puzzle rating | Starts at |
 |---|---|---|
@@ -64,11 +97,16 @@ After a puzzle solved without help the target moves up 50 points, after one solv
 20, and after a missed one (wrong move, the move shown, or *Show solution*) down 50. It stays within
 the chosen level, and the next puzzle is picked within about 100 points of it.
 
-## Privacy: nothing is saved, nothing is sent
+## Privacy: only Ranked progress is saved, nothing is sent
 
 - It is a static website: no server program, no accounts, no logins, no database.
-- Nothing about the player is stored: no cookies, no localStorage, no analytics, no outside
-  scripts or fonts. Close the page and everything starts fresh.
+- Only the Ranked mode keeps anything: its progress in each time control (floor, bar, wins,
+  draws, losses) and an unfinished game, in `localStorage` on this device (key
+  `chess-for-all-ranked`). It never leaves the device. *Reset progress* clears one time control;
+  clearing the site's data in the browser removes it all. If the browser does not allow storage,
+  Ranked still works and says that the progress lasts only until the page is closed.
+- Nothing else is stored: no cookies, no analytics, no outside scripts or fonts. Outside Ranked,
+  close the page and everything starts fresh.
 - The chess engine (Stockfish) runs inside the browser, in a Web Worker.
 - The page never contacts any other address. All libraries are copied into `vendor/`.
 - The coach's voice uses only voices that run on the device (`localService`), never an online voice.
@@ -135,6 +173,7 @@ files. They switch over the next time the page is opened.
 | `opponents.js` | The ten opponents: strength level, playing style, favourite openings, voice |
 | `puzzles.js` | Puzzle mode and the Easy / Medium / Hard levels |
 | `rush.js` | Puzzle Rush |
+| `ranked.js` | Ranked: time controls, the tower, clocks, progress (the only thing saved, in localStorage) |
 | `sounds.js`, `confetti.js` | The sounds (Web Audio API) and the confetti |
 | `analysis.js` | Move grades, pieces in danger, facts about moves and the opponents' moves (chess.js + Stockfish) |
 | `engine.js` | Talks to Stockfish in a Web Worker |
