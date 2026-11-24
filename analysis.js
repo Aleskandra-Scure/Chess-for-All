@@ -306,6 +306,32 @@ export async function opponentMove(fen, opp, line = []) {
   return pick;
 }
 
+// The grade of a move from the evaluations before it (best play) and after it, both from the mover's
+// side in centipawns. Grades like chess.com, from lost winning chances: best !!, good !,
+// inaccuracy ?!, mistake ?, blunder ??. A book move is not marked ?! for small differences in
+// Stockfish's score. A real mistake that happens to be in the book (trap lines are in it too)
+// keeps its ? or ??. `line`: all moves of the game so far in UCI, this move (`uci`) last.
+// Used for the Play tab and for the Ranked game review, so both follow the same rules.
+export function gradeMove({ evalBefore, evalAfter, isBest, checkmate, line, uci }) {
+  const lost = winChance(evalBefore) - winChance(evalAfter);
+  const inBook = lost < 18 && line.at(-1) === uci && openingOf(line).inBook;
+  let category = 'good';
+  if (checkmate) category = 'checkmate';
+  else if (inBook) category = 'book';
+  else if (lost >= 30) category = 'blunder';
+  else if (lost >= 18) category = 'mistake';
+  else if (isBest) category = 'best';
+  else if (lost >= 8) category = 'inaccuracy';
+  return { category, lost };
+}
+
+// One position of the Ranked game review (review.js): Stockfish at full strength, one line, at the
+// given depth. Not kept in the shared analysis above, which uses its own depth and two lines.
+export async function reviewSearch(fen, depth) {
+  const r = await engine.search(fen, { depth, multiPv: 1 });
+  return { best: r.lines[0]?.uci || r.best, cp: scoreToCp(r.lines[0]?.score || r.score) };
+}
+
 // Judges the player's move: grade, better move, the opponent's best answer, pieces left in danger.
 // `line`: all moves of the game so far in UCI, the player's move last (for the opening book).
 export async function judgeMove(fen, move, line) {
@@ -331,21 +357,9 @@ export async function judgeMove(fen, move, line) {
   }
 
   const evalBefore = scoreToCp(pre.score);
-  const lost = winChance(evalBefore) - winChance(evalAfter);
   const playedUci = uciOf(played);
   const isBest = pre.best === playedUci;
-
-  // Grades like chess.com, from lost winning chances: best !!, good !, inaccuracy ?!, mistake ?, blunder ??.
-  // A book move is not marked ?! for small differences in Stockfish's score. A real mistake that
-  // happens to be in the book (trap lines are in it too) keeps its ? or ??.
-  const inBook = lost < 18 && line.at(-1) === playedUci && openingOf(line).inBook;
-  let category = 'good';
-  if (over?.reason === 'checkmate') category = 'checkmate';
-  else if (inBook) category = 'book';
-  else if (lost >= 30) category = 'blunder';
-  else if (lost >= 18) category = 'mistake';
-  else if (isBest) category = 'best';
-  else if (lost >= 8) category = 'inaccuracy';
+  const { category } = gradeMove({ evalBefore, evalAfter, isBest, checkmate: over?.reason === 'checkmate', line, uci: playedUci });
 
   const facts = moveFacts(fen, playedUci);
   const moment = {

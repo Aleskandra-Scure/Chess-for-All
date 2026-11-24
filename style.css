@@ -706,3 +706,104 @@ button.rk-play { flex: none; min-height: 64px; font-size: 1.4rem; }
   .mode { gap: 4px; }
   .mode button { padding: 8px 2px; font-size: 0.84rem; white-space: nowrap; }
 }
+
+/* ---------- Ranked: recent games on the tower screen ---------- */
+.rk-icon.tiny { width: 20px; height: 20px; }
+.rk-recent { display: flex; flex-direction: column; gap: 6px; }
+.rk-recent-title { margin: 4px 0 0; font-size: 1.05rem; }
+.rk-recent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rk-recent-empty { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.rk-recent-empty[hidden] { display: none; }
+.rk-game-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 12px; background: var(--field); border: 1px solid var(--line); border-left-width: 5px;
+}
+.rk-game-row.win { border-left-color: var(--accent); }
+.rk-game-row.draw { border-left-color: var(--muted); }
+.rk-game-row.loss { border-left-color: var(--losing); }
+.rk-game-result { display: flex; align-items: center; gap: 4px; min-width: 66px; }
+.rk-game-facts { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+.rk-game-fact { display: inline-flex; align-items: center; gap: 3px; }
+.rk-review-btn {
+  font: inherit; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; min-height: 40px; border-radius: 999px; border: 2px solid var(--accent);
+  background: var(--panel); color: var(--accent); cursor: pointer;
+}
+.rk-review-btn:hover, .rk-review-btn:focus-visible { background: var(--bubble); }
+.rk-review-btn:disabled { opacity: 0.45; cursor: default; }
+.rk-reviewed {
+  display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-ink); font-size: 0.75rem;
+}
+
+/* ---------- Ranked: the game review ---------- */
+.rv-back {
+  font: inherit; font-weight: 700; border: 1px solid var(--line); background: var(--panel); color: var(--accent);
+  border-radius: 999px; padding: 6px 14px; min-height: 40px; cursor: pointer;
+}
+.rv-working {
+  max-width: 460px; margin: 10px auto; text-align: center; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 16px; padding: 16px;
+}
+.rv-working > p:first-child { margin: 0 0 10px; font-weight: 700; }
+.rv-working[hidden], #rvDone[hidden], .rv-nokey[hidden], .rv-key-label[hidden], .rv-buttons button[hidden] { display: none; }
+.rk-bar-fill.rv-progress { transition: width 200ms linear; }
+.rv-heading { margin: 0 0 6px; text-align: center; font-size: 1.05rem; }
+.rv-summary { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.rv-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 5px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--line); font-size: 0.9rem; color: var(--muted); font-weight: 600;
+}
+.rv-chip strong { color: var(--ink); font-size: 1rem; font-variant-numeric: tabular-nums; }
+.rv-chip.none { opacity: 0.6; }
+.rv-nokey { text-align: center; margin: 0 0 10px; font-weight: 700; color: var(--accent); }
+.rv-chart-box {
+  position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 4px 6px; margin: 0 0 12px;
+}
+.rv-chart { display: block; width: 100%; height: 110px; cursor: pointer; }
+.rv-chart-label {
+  position: absolute; right: 12px; font-size: 0.75rem; font-weight: 700; color: var(--muted); pointer-events: none;
+  background: var(--panel); padding: 0 4px; border-radius: 4px; opacity: 0.9;
+}
+.rv-chart-label.up { top: 2px; }
+.rv-chart-label.down { bottom: 2px; }
+.rv-area-up { fill: var(--accent); opacity: 0.4; }
+.rv-area-down { fill: var(--losing); opacity: 0.35; }
+.rv-mid { stroke: var(--muted); stroke-dasharray: 4 4; stroke-width: 1; }
+.rv-line { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.rv-cursor { stroke: var(--accent); stroke-width: 2; }
+.rv-key-dot { fill: #ca3431; stroke: var(--panel); stroke-width: 2; }
+.rv-layout { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 12px; align-items: start; }
+.rv-main { min-width: 0; }
+.rv-nav { display: flex; justify-content: center; gap: 8px; margin: 8px 0; }
+.rv-nav button {
+  font: inherit; font-size: 1.15rem; min-width: 56px; min-height: 44px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer;
+}
+.rv-nav button:disabled { opacity: 0.4; cursor: default; }
+.rv-coach { background: var(--bubble); border: 1px solid var(--bubble-line); border-radius: 16px; padding: 12px; }
+.rv-key-label { margin: 0 0 4px; font-weight: 800; color: var(--losing); font-size: 0.9rem; }
+.rv-text { margin: 0; font-weight: 600; }
+.rv-legend { margin: 8px 0 0; }
+.rv-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.rv-buttons button.big { flex: 1 1 180px; min-height: 48px; font-size: 1rem; }
+.rv-moves {
+  list-style: none; margin: 0; padding: 6px; max-height: 560px; overflow-y: auto; position: relative;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+}
+.rv-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr); gap: 3px; align-items: center; }
+.rv-num { color: var(--muted); font-size: 0.85rem; text-align: right; padding-right: 4px; }
+.rv-move {
+  font: inherit; font-size: 0.92rem; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 4px;
+  padding: 3px 6px; min-height: 32px; border-radius: 8px; border: 2px solid transparent; background: none;
+  color: var(--ink); cursor: pointer; text-align: left;
+}
+.rv-move:not(.mine) { color: var(--muted); font-weight: 400; }
+.rv-move.key { border-color: #ca3431; background: var(--warn); }
+.rv-move.current { background: var(--accent); color: var(--accent-ink); }
+@media (max-width: 700px) {
+  .rv-layout { grid-template-columns: minmax(0, 1fr); }
+  .rv-moves { max-height: 220px; }
+  .rv-chart { height: 96px; }
+}

@@ -72,7 +72,33 @@ play against the computer with a friendly coach, or solve chess puzzles.
   - **Saved on the device:** only Ranked keeps anything (see Privacy). When the app is hidden or
     closed the clock stops and the game is kept, so it can be finished later; starting a new game
     then asks whether to finish the old one or resign it (a loss). *Reset progress* clears one
-    time control.
+    time control, together with its recent games.
+  - **Recent games:** under *Play* on the tower, the last 5 finished games of that time control
+    (each time control has its own list; a new game pushes out the oldest). Each row shows the
+    result, the player's colour, the number of moves, the floor it was played on, when (for
+    example "today 18:42", "yesterday" or "12 Nov") and a *Review* button, with a ✓ once the game
+    has been reviewed. The end screen of a game has *Review game* too.
+  - **Game review** (`review.js`): Stockfish looks at every position of the game in the browser,
+    with a progress bar. Depth 12 (the depth the Play tab grades moves with), one line; if the
+    device is slow and the review would take longer than about 15 seconds, the rest of the game is
+    looked at with depth 10, then 8. A 40-move game takes 1–3 seconds on a desktop computer.
+    Leaving the screen stops the work; coming back carries on. Then:
+    - the player's moves get the same marks as in the Play tab (!!, !, ?!, ?, ??, 📖), worked out
+      by the same function; the computer's moves get none. At the top: how many moves got each
+      mark (no accuracy percentage and no other numbers);
+    - a chart of the advantage from the player's side, in the theme's colours; tapping it goes to
+      that move;
+    - the board (from the player's side) with ⏮ ◀ ▶ ⏭, the ← → keys and a list of moves to tap;
+    - **key moments:** the player's 2–3 biggest mistakes (? and ??; if there are fewer than two,
+      the biggest ?! moves make up two), marked in the list and on the chart, with *Next key
+      moment*. Each one shows a green arrow with a better move, a red arrow with the opponent's
+      threat after the player's move (when there is a real one: a capture, a check, a fork or
+      checkmate) and a short explanation built from the coach's sentences;
+    - **Try again from here:** the position before the mistake, to find a better move like a
+      puzzle. A move that loses less than a "!" move would (the best move or close to it) is
+      right: confetti and a sound. A wrong move is taken back with a short hint. *Show the answer*
+      shows the move with a green arrow; *Back to the review* returns.
+    - A review never changes the floor, the bar or the wins, draws and losses.
 
 | Floors | Stockfish Skill Level | Depth | Random moves | Wins to move up |
 |---|---|---|---|---|
@@ -97,13 +123,15 @@ After a puzzle solved without help the target moves up 50 points, after one solv
 20, and after a missed one (wrong move, the move shown, or *Show solution*) down 50. It stays within
 the chosen level, and the next puzzle is picked within about 100 points of it.
 
-## Privacy: only Ranked progress is saved, nothing is sent
+## Privacy: only Ranked progress and recent games are saved, nothing is sent
 
 - It is a static website: no server program, no accounts, no logins, no database.
 - Only the Ranked mode keeps anything: its progress in each time control (floor, bar, wins,
-  draws, losses) and an unfinished game, in `localStorage` on this device (key
-  `chess-for-all-ranked`). It never leaves the device. *Reset progress* clears one time control;
-  clearing the site's data in the browser removes it all. If the browser does not allow storage,
+  draws, losses), an unfinished game and the last 5 finished games of each time control (only
+  their moves, result, colour, floor, time control, date and whether they have been reviewed), in
+  `localStorage` on this device (key `chess-for-all-ranked`). The results of a game review are
+  not saved. It never leaves the device. *Reset progress* clears one time control and its recent
+  games; clearing the site's data in the browser removes it all. If the browser does not allow storage,
   Ranked still works and says that the progress lasts only until the page is closed.
 - Nothing else is stored: no cookies, no analytics, no outside scripts or fonts. Outside Ranked,
   close the page and everything starts fresh.
@@ -173,7 +201,8 @@ files. They switch over the next time the page is opened.
 | `opponents.js` | The ten opponents: strength level, playing style, favourite openings, voice |
 | `puzzles.js` | Puzzle mode and the Easy / Medium / Hard levels |
 | `rush.js` | Puzzle Rush |
-| `ranked.js` | Ranked: time controls, the tower, clocks, progress (the only thing saved, in localStorage) |
+| `ranked.js` | Ranked: time controls, the tower, clocks, progress and recent games (the only things saved, in localStorage) |
+| `review.js` | Ranked game review: marks, the advantage chart, key moments and *Try again from here* |
 | `sounds.js`, `confetti.js` | The sounds (Web Audio API) and the confetti |
 | `analysis.js` | Move grades, pieces in danger, facts about moves and the opponents' moves (chess.js + Stockfish) |
 | `engine.js` | Talks to Stockfish in a Web Worker |

@@ -3,13 +3,15 @@
 // bar of the floor, a draw fills it a little, a loss takes a little away; a full bar moves the player
 // up, and a loss on an empty bar moves them down (except for the first two losses after moving up).
 //
-// This is the only part of Chess for All that keeps anything: the progress of each time control
-// (and an unfinished game) in localStorage on this device. Nothing is ever sent anywhere.
+// This is the only part of Chess for All that keeps anything: the progress of each time control,
+// an unfinished game and the last 5 finished games (for the game review, review.js) in localStorage
+// on this device. Nothing is ever sent anywhere.
 import { Chessground } from './vendor/chessground/chessground.js';
 import { Chess } from './vendor/chess.js/chess.js';
 import { engineReady, rankedMove, gameOverInfo } from './analysis.js';
 import { play, playMove } from './sounds.js';
 import { confetti } from './confetti.js';
+import { createReview } from './review.js';
 
 const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -58,13 +60,14 @@ const TOP = FLOORS.length - 1;
 const DRAW = 0.4; // a draw fills this much of one win
 const LOSS = 0.5; // a loss takes this much of one win away
 const SHIELD = 2; // losses after moving up that never move the player down
+const RECENT = 5; // finished games kept in each time control for "Recent games"
 
 // ---------- Saved progress (localStorage, this device only) ----------
 
 const KEY = 'chess-for-all-ranked';
 let storageOk = true;
 
-const fresh = () => ({ floor: 0, progress: 0, best: 0, shield: 0, wins: 0, draws: 0, losses: 0, game: null });
+const fresh = () => ({ floor: 0, progress: 0, best: 0, shield: 0, wins: 0, draws: 0, losses: 0, game: null, history: [] });
 const num = (v, lo, hi, d = lo) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
 
 function load() {
@@ -84,6 +87,8 @@ function load() {
     rec.shield = Math.round(num(r.shield, 0, SHIELD));
     for (const k of ['wins', 'draws', 'losses']) rec[k] = Math.round(num(r[k], 0, 1e6));
     rec.game = validGame(r.game) ? r.game : null;
+    rec.history = (Array.isArray(r.history) ? r.history : []).filter(validEntry).slice(0, RECENT)
+      .map((h) => ({ tc: tc.id, moves: h.moves.slice(), result: h.result, colour: h.colour, floor: h.floor, at: h.at, reviewed: h.reviewed === true }));
     data[tc.id] = rec;
   }
   return data;
@@ -95,6 +100,21 @@ function validGame(g) {
     const c = new Chess();
     for (const m of g.moves) c.move(uciMove(m));
     return !c.isGameOver() && Number.isInteger(g.floor) && g.floor >= 0 && g.floor <= TOP;
+  } catch {
+    return false;
+  }
+}
+
+// A finished game of "Recent games": only its moves, result, colour, floor, time control, date
+// and whether it has been reviewed.
+function validEntry(h) {
+  if (!h || !Array.isArray(h.moves) || h.moves.length > 1000 || !['w', 'b'].includes(h.colour)) return false;
+  if (!['win', 'draw', 'loss'].includes(h.result) || !Number.isInteger(h.floor) || h.floor < 0 || h.floor > TOP) return false;
+  if (!Number.isFinite(h.at)) return false;
+  try {
+    const c = new Chess();
+    for (const m of h.moves) c.move(uciMove(m));
+    return true;
   } catch {
     return false;
   }
@@ -143,7 +163,7 @@ export function createRanked(ctx) {
   const tcName = (tc) => t('rankedTc')[tc.id].name;
   const winsLeft = (rec) => Math.max(1, Math.ceil(FLOORS[rec.floor].wins - rec.progress - 1e-9));
 
-  let screen = 'pick'; // 'pick', 'tower' or 'game'
+  let screen = 'pick'; // 'pick', 'tower', 'game' or 'review'
   let tc = null; // the chosen time control
   let colourChoice = 'random';
   let visible = false;
@@ -155,6 +175,7 @@ export function createRanked(ctx) {
   let lastSecond = null;
   let lastChange = null; // the result of the last game, for the tower animation
   let confirmResolve = null;
+  let lastEntry = null; // the game just finished, for "Review game" on the end screen
 
   const timed = () => Boolean(game && tcById(game.tc).minutes);
   const clockOn = () => timed() && !game.over && game.moves.length > 0; // runs after White's first move
@@ -197,6 +218,7 @@ export function createRanked(ctx) {
     $('rkPick').hidden = s !== 'pick';
     $('rkTowerScreen').hidden = s !== 'tower';
     $('rkGame').hidden = s !== 'game';
+    $('rkReview').hidden = s !== 'review';
     if (s === 'game') ensureBoard();
   }
 
@@ -303,6 +325,7 @@ export function createRanked(ctx) {
     $('rkUnfinished').hidden = !r.game;
     document.querySelectorAll('[data-rk-colour]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.rkColour === colourChoice)));
     $('rkStorageNote2').hidden = storageOk;
+    renderRecent(r);
 
     // The current floor in the middle of the tower's window (the page itself does not jump).
     const box = $('rkTowerBox');
@@ -311,6 +334,93 @@ export function createRanked(ctx) {
       box.scrollTop = cur.offsetTop - box.clientHeight / 2 + cur.offsetHeight / 2;
       if (change && change.from !== change.to) climb(change.from, change.to);
     });
+  }
+
+  // ---------- Recent games (the last 5 in this time control) ----------
+
+  // "today 18:42", "yesterday" or a date such as "12 Nov".
+  function when(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const days = Math.round((day(now) - day(d)) / 86400000);
+    if (days === 0) return fill(t('rankedToday'), { time: d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) });
+    if (days === 1) return t('rankedYesterday');
+    const opts = { day: 'numeric', month: 'short' };
+    if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+    return d.toLocaleDateString('en-GB', opts);
+  }
+
+  const RESULT_ICON = { win: '✅', draw: '🤝', loss: '❌' };
+  const movesText = (h) => {
+    const n = Math.ceil(h.moves.length / 2);
+    return fill(t(n === 1 ? 'rankedMovesOne' : 'rankedMoves'), { n });
+  };
+  // Moves the player made in the game (nothing to review without one).
+  const playerMoves = (h) => (h.colour === 'w' ? Math.ceil(h.moves.length / 2) : Math.floor(h.moves.length / 2));
+
+  function renderRecent(r) {
+    const rows = r.history.map((h, i) => {
+      const li = el('li', `rk-game-row ${h.result}`);
+      const res = el('span', 'rk-game-result');
+      res.append(el('span', 'rk-game-icon', RESULT_ICON[h.result]), el('strong', '', t('rankedResults')[h.result]));
+      res.firstChild.setAttribute('aria-hidden', 'true');
+      const facts = el('span', 'rk-game-facts');
+      const colour = el('span', 'rk-game-fact');
+      colour.append(pieceIcon('king', colourName(h.colour), 'rk-icon tiny'), el('span', '', t('rankedColours')[h.colour]));
+      const floor = el('span', 'rk-game-fact');
+      floor.append(pieceIcon(FLOORS[h.floor].rank, 'white', 'rk-icon tiny'), el('span', '', rankName(h.floor)));
+      facts.append(colour, el('span', 'rk-game-fact', movesText(h)), floor, el('span', 'rk-game-fact rk-game-when', when(h.at)));
+      const btn = el('button', 'rk-review-btn');
+      btn.dataset.review = String(i);
+      btn.append(el('span', '', t('rankedReview')));
+      if (!playerMoves(h)) btn.disabled = true;
+      if (h.reviewed) {
+        const done = el('span', 'rk-reviewed', '✓');
+        done.title = t('rankedReviewed');
+        done.setAttribute('aria-label', t('rankedReviewed'));
+        btn.append(done);
+      }
+      li.append(res, facts, btn);
+      return li;
+    });
+    $('rkRecent').replaceChildren(...rows);
+    $('rkRecentEmpty').hidden = rows.length > 0;
+  }
+
+  // Each time control keeps its own last 5 games: the newest first, the oldest one drops out.
+  function remember(r, tcId, g, result) {
+    r.history.unshift({ tc: tcId, moves: g.moves.slice(), result, colour: g.colour, floor: g.floor, at: Date.now(), reviewed: false });
+    r.history.length = Math.min(r.history.length, RECENT);
+    return r.history[0];
+  }
+
+  $('rkRecent').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-review]');
+    if (!b || b.disabled) return;
+    const h = rec().history[Number(b.dataset.review)];
+    if (h) openReview(h);
+  });
+
+  // ---------- Screen 4: the game review ----------
+
+  const review = createReview({
+    t,
+    onBack: () => backToTower(),
+    onReviewed: () => store(),
+  });
+
+  function openReview(h) {
+    game = null;
+    showScreen('review');
+    const about = [
+      `${tc.icon} ${tcName(tc)}`,
+      `${RESULT_ICON[h.result]} ${t('rankedResults')[h.result]}`,
+      t('rankedColours')[h.colour],
+      rankName(h.floor),
+      when(h.at),
+    ].join(' · ');
+    review.open(h, about);
   }
 
   // The player's pawn walks from the old floor to the new one.
@@ -356,6 +466,7 @@ export function createRanked(ctx) {
       if (finish) return resumeSaved();
       // Resigning the old game counts as a loss; then the new game starts (on the floor after it).
       applyResult(r, 'loss');
+      remember(r, tc.id, r.game, 'loss');
       r.game = null;
       store();
     }
@@ -660,6 +771,7 @@ export function createRanked(ctx) {
     const r = data[game.tc];
     r.game = null;
     const change = applyResult(r, result);
+    lastEntry = remember(r, game.tc, game, result);
     store();
     renderClocks();
     $('rkStatus').textContent = '';
@@ -682,6 +794,7 @@ export function createRanked(ctx) {
     $('rkEndChange').className = `rk-end-change ${change.kind}`;
     $('rkEndRank').replaceChildren(pieceIcon(FLOORS[r.floor].rank), el('span', '', rank));
     $('rkEndBar').replaceChildren(bar(r));
+    $('rkReviewGame').disabled = !playerMoves(lastEntry);
     $('rkEnd').hidden = false;
 
     if (change.kind === 'promoted') {
@@ -695,11 +808,15 @@ export function createRanked(ctx) {
   }
 
   $('rkAgain').addEventListener('click', () => newGame());
-  $('rkBack').addEventListener('click', () => {
+  function backToTower() {
     const change = lastChange;
     lastChange = null;
     game = null;
     openTower(change);
+  }
+  $('rkBack').addEventListener('click', backToTower);
+  $('rkReviewGame').addEventListener('click', () => {
+    if (lastEntry) openReview(lastEntry);
   });
 
   // ---------- Hidden page or app closed: the clock stops and the game is kept ----------
@@ -721,6 +838,7 @@ export function createRanked(ctx) {
       showScreen(screen);
       if (screen === 'pick') renderPick();
       if (screen === 'tower') renderTower();
+      if (screen === 'review') review.show();
       if (screen === 'game' && game) {
         sync();
         runClock();
@@ -731,6 +849,7 @@ export function createRanked(ctx) {
       visible = false;
       saveGame();
       stopClock();
+      review.hide();
     },
     get state() {
       const r = tc ? data[tc.id] : null;
@@ -746,6 +865,8 @@ export function createRanked(ctx) {
           clock: { w: Math.round(left('w')), b: Math.round(left('b')) }, running: turnStart !== null,
         } : null,
         lastChange,
+        history: tc ? data[tc.id].history.map((h) => ({ result: h.result, colour: h.colour, floor: h.floor, moves: h.moves.length, reviewed: h.reviewed, at: h.at })) : [],
+        review: review.state,
       };
     },
     // For automated tests only: set the time left on both clocks (milliseconds).

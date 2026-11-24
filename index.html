@@ -274,6 +274,11 @@
           </div>
           <p id="rkUnfinished" class="rk-unfinished" data-i18n="rankedUnfinished" hidden></p>
           <button id="rkPlay" class="big primary rk-play"><span aria-hidden="true">&#9654;</span> <span data-i18n="rankedPlay">Play</span></button>
+          <section class="rk-recent" aria-labelledby="rkRecentTitle">
+            <h3 id="rkRecentTitle" class="rk-recent-title" data-i18n="rankedRecent">Recent games</h3>
+            <ol id="rkRecent" class="rk-recent-list"></ol>
+            <p id="rkRecentEmpty" class="rk-recent-empty" data-i18n="rankedRecentEmpty" hidden></p>
+          </section>
           <div class="rk-more">
             <button id="rkChange" class="big secondary" data-i18n="rankedChange">Change time control</button>
             <button id="rkReset" class="big secondary" data-i18n="rankedReset">Reset progress</button>
@@ -309,6 +314,7 @@
               <div id="rkEndBar"></div>
               <div class="pz-start-buttons">
                 <button id="rkAgain" class="big primary"><span aria-hidden="true">&#8635;</span> <span data-i18n="rankedPlayAgain">Play again</span></button>
+                <button id="rkReviewGame" class="big secondary"><span aria-hidden="true">&#128269;</span> <span data-i18n="rankedReviewGame">Review game</span></button>
                 <button id="rkBack" class="big secondary"><span aria-hidden="true">&#127942;</span> <span data-i18n="rankedBackTower">Back to the tower</span></button>
               </div>
             </div>
@@ -321,6 +327,57 @@
         <p id="rkStatus" class="status"></p>
         <div class="hint-row">
           <button id="rkResign" class="hint-btn undo-btn"><span aria-hidden="true">&#9873;</span> <span data-i18n="rankedResign">Resign</span></button>
+        </div>
+      </div>
+
+      <div id="rkReview" class="rk-screen rv" hidden>
+        <button id="rvBack" class="rv-back"><span aria-hidden="true">&#8592;</span> <span data-i18n="rankedBackTower">Back to the tower</span></button>
+        <h2 class="rk-title" data-i18n="rvTitle">Game review</h2>
+        <p id="rvAbout" class="rk-lead"></p>
+        <div id="rvWorking" class="rv-working">
+          <p data-i18n="rvWorking">The computer is looking at your game…</p>
+          <div id="rvProgressBar" class="rk-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="rvProgress" class="rk-bar-fill rv-progress"></div></div>
+          <p class="rk-note" data-i18n="rvNoChange"></p>
+        </div>
+        <p id="rvFailed" class="rk-note warn" data-i18n="rvFailed" hidden></p>
+        <div id="rvDone" hidden>
+          <h3 class="rv-heading" data-i18n="rvYourMoves">Your moves</h3>
+          <ul id="rvSummary" class="rv-summary"></ul>
+          <p id="rvNoKey" class="rv-nokey" data-i18n="rvNoKey" hidden></p>
+          <div class="rv-chart-box">
+            <span class="rv-chart-label up" data-i18n="rvChartUp">Better for you</span>
+            <svg id="rvChart" class="rv-chart" role="img" aria-label="How the game went"></svg>
+            <span class="rv-chart-label down" data-i18n="rvChartDown">Better for the computer</span>
+          </div>
+          <div class="rv-layout">
+            <div class="rv-main">
+              <div class="board-wrap">
+                <div id="rvBoard" class="board"></div>
+                <div id="rvBadge" class="badge" hidden></div>
+              </div>
+              <div class="rv-nav">
+                <button id="rvFirst" aria-label="Start of the game">&#9198;</button>
+                <button id="rvPrev" aria-label="Previous move">&#9664;</button>
+                <button id="rvNext" aria-label="Next move">&#9654;</button>
+                <button id="rvLast" aria-label="End of the game">&#9197;</button>
+              </div>
+              <div class="rv-coach" aria-live="polite">
+                <p id="rvKeyLabel" class="rv-key-label" hidden></p>
+                <p id="rvText" class="rv-text"></p>
+                <ul id="rvLegend" class="legend rv-legend" hidden>
+                  <li id="rvLegendGreen"><span class="swatch green"></span><span data-i18n="rvLegendBetter">a better move</span></li>
+                  <li id="rvLegendRed"><span class="swatch red"></span><span data-i18n="rvLegendThreat">what your opponent could do next</span></li>
+                </ul>
+                <div class="rv-buttons">
+                  <button id="rvTry" class="big primary" hidden><span aria-hidden="true">&#8635;</span> <span data-i18n="rvTry">Try again from here</span></button>
+                  <button id="rvAnswer" class="big secondary" hidden><span aria-hidden="true">&#128161;</span> <span data-i18n="rvShowAnswer">Show the answer</span></button>
+                  <button id="rvBackReview" class="big secondary" hidden><span aria-hidden="true">&#8592;</span> <span data-i18n="rvBackReview">Back to the review</span></button>
+                  <button id="rvNextKey" class="big secondary" hidden><span aria-hidden="true">&#9889;</span> <span data-i18n="rvNextKey">Next key moment</span></button>
+                </div>
+              </div>
+            </div>
+            <ol id="rvMoves" class="rv-moves" aria-label="Moves of the game"></ol>
+          </div>
         </div>
       </div>
     </section>
@@ -418,7 +475,7 @@
   </main>
 
   <footer>
-    <span data-i18n="footer">Free for everyone. Only Ranked progress is kept on this device, and nothing is sent anywhere.</span>
+    <span data-i18n="footer">Free for everyone. Only Ranked progress and your last 5 Ranked games are kept on this device, and nothing is sent anywhere.</span>
     <a href="./CREDITS.md" data-i18n="credits">Credits and licences</a>
   </footer>
 
