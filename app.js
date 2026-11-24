@@ -9,6 +9,7 @@ import { initThemes, currentTheme } from './themes.js';
 import { OPPONENTS, DEFAULT_OPPONENT, OPPONENT_MOODS, opponentById, opponentImage } from './opponents.js';
 import { createRush } from './rush.js';
 import { createRanked } from './ranked.js';
+import { createTournamentMode } from './tournament.js';
 import { play as playSound, playMove, setMuted as setSoundMuted } from './sounds.js';
 import { confetti } from './confetti.js';
 import { openingsReady, openingOf, openingFamily } from './openings.js';
@@ -27,7 +28,7 @@ let vsFriend = false; // the current game is two players on this device
 let helpFor = 'both'; // with a friend: help for 'w', 'b', 'both' or 'none'
 let flipBoard = true; // with a friend: the board turns to the side to move (on each time the page opens)
 let coach = coachById(DEFAULT_COACH);
-let mode = 'play'; // 'play', 'puzzles', 'learn' or 'ranked'
+let mode = 'play'; // 'play', 'puzzles', 'learn', 'ranked' or 'tournament'
 let pzMode = 'puzzles'; // in the Puzzles tab: 'puzzles' or 'rush'
 let engineOk = null; // null while Stockfish is loading, then true or false
 
@@ -203,7 +204,7 @@ let pulseTimer = null;
 function baseMood() {
   if (mode === 'puzzles') return pzMode === 'rush' ? rush.mood() : puzzles.mood();
   if (mode === 'learn') return learn.mood();
-  if (mode === 'ranked') return 'neutral';
+  if (mode === 'ranked' || mode === 'tournament') return 'neutral';
   if (gameOver && endText === 'youWon') return 'celebrate';
   if (pause) return 'worried';
   if (hintLoading || (hint && hint.fen === chess.fen())) return 'thinking';
@@ -1488,6 +1489,9 @@ const learn = createLearn({
 // Ranked: the tower in each time control (its progress is the only thing kept on the device).
 const ranked = createRanked({ t });
 
+// Tournament: 3–8 players on one device, each with their own help level (kept only until it ends).
+const tournament = createTournamentMode({ t, coach: () => coach, speak });
+
 // Switching keeps the game exactly as it is; it carries on when the player comes back.
 function setMode(m) {
   if (m === mode) return;
@@ -1501,6 +1505,7 @@ function setMode(m) {
   const pz = mode === 'puzzles';
   const ln = mode === 'learn';
   const rk = mode === 'ranked';
+  const tn = mode === 'tournament';
   document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
   $('playView').hidden = !play;
   $('playControls').hidden = !play;
@@ -1513,14 +1518,17 @@ function setMode(m) {
   $('lnMessages').hidden = !ln;
   // Ranked has no coach: the side panel goes away and the mode uses the whole width.
   $('rankedView').hidden = !rk;
-  document.querySelector('main').classList.toggle('ranked-on', rk);
+  $('tournamentView').hidden = !tn;
+  document.querySelector('main').classList.toggle('ranked-on', rk || tn);
   clearReaction();
   if (!pz) rush.hide();
   if (!rk) ranked.hide();
+  if (!tn) tournament.hide();
   if (pz && pzMode === 'rush') rush.show();
   else if (pz) puzzles.show();
   else if (ln) learn.show();
   else if (rk) ranked.show();
+  else if (tn) tournament.show();
   else cg.redrawAll();
 }
 
@@ -1572,4 +1580,6 @@ window.chessForAll = {
   rushLengthForTests: (seconds) => rush.setLengthForTests(seconds),
   get ranked() { return ranked.state; },
   rankedClocksForTests: (w, b) => ranked.setClocksForTests(w, b),
+  get tournament() { return tournament.state; },
+  tournamentForTests: tournament.forTests,
 };

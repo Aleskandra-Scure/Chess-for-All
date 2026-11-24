@@ -27,6 +27,7 @@
       <button data-mode="puzzles" aria-pressed="false"><span aria-hidden="true">&#129513;</span> <span data-i18n="modePuzzles">Puzzles</span></button>
       <button data-mode="learn" aria-pressed="false"><span aria-hidden="true">&#127891;</span> <span data-i18n="modeLearn">Learn</span></button>
       <button data-mode="ranked" aria-pressed="false"><span aria-hidden="true">&#127942;</span> <span data-i18n="modeRanked">Ranked</span></button>
+      <button data-mode="tournament" aria-pressed="false"><span aria-hidden="true">&#127941;</span> <span data-i18n="modeTournament">Tournament</span></button>
     </div>
     <div class="header-tools">
       <button id="themeButton" class="theme-btn"><span aria-hidden="true">&#127912;</span> <span data-i18n="themeButton">Theme</span></button>
@@ -382,6 +383,165 @@
       </div>
     </section>
 
+    <section id="tournamentView" class="play tn-view" hidden>
+      <ol id="tnSteps" class="tn-steps">
+        <li><span class="tn-step-n">1</span> <span data-i18n="tn.steps.format">Format</span></li>
+        <li><span class="tn-step-n">2</span> <span data-i18n="tn.steps.players">Players</span></li>
+        <li><span class="tn-step-n">3</span> <span data-i18n="tn.steps.settings">Settings</span></li>
+        <li><span class="tn-step-n">4</span> <span data-i18n="tn.steps.play">Play</span></li>
+      </ol>
+
+      <div id="tnFormat" class="tn-screen">
+        <h2 class="rk-title" data-i18n="tn.formatTitle">Choose a format</h2>
+        <p class="rk-lead" data-i18n="tn.formatLead"></p>
+        <div id="tnFormats" class="tn-formats"></div>
+        <div class="tn-nav"><span></span><button id="tnFormatNext" class="big primary"><span data-i18n="tn.next">Next</span> <span aria-hidden="true">&#8594;</span></button></div>
+        <p class="rk-note" data-i18n="tn.privacy"></p>
+      </div>
+
+      <div id="tnPlayers" class="tn-screen" hidden>
+        <h2 class="rk-title" data-i18n="tn.playersTitle">Players</h2>
+        <p id="tnPlayersLead" class="rk-lead"></p>
+        <ul id="tnPlayerList" class="tn-player-list"></ul>
+        <p id="tnPlayersEmpty" class="tn-empty" data-i18n="tn.noPlayers"></p>
+        <button id="tnAdd" class="big secondary tn-add"><span aria-hidden="true">&#10133;</span> <span data-i18n="tn.addPlayer">Add player</span></button>
+        <p id="tnPlayersNote" class="tn-note" aria-live="polite"></p>
+        <p class="rk-note" data-i18n="tn.noUndo"></p>
+        <div class="tn-nav">
+          <button id="tnPlayersBack" class="big secondary"><span aria-hidden="true">&#8592;</span> <span data-i18n="tn.back">Back</span></button>
+          <button id="tnPlayersNext" class="big primary"><span data-i18n="tn.next">Next</span> <span aria-hidden="true">&#8594;</span></button>
+        </div>
+      </div>
+
+      <div id="tnSettings" class="tn-screen" hidden>
+        <h2 class="rk-title" data-i18n="tn.settingsTitle">Settings</h2>
+        <p id="tnSummary" class="rk-lead"></p>
+        <div class="tn-settings">
+          <div class="setting">
+            <span data-i18n="tn.clock">Clock</span>
+            <div class="segmented tn-seg" role="group">
+              <button data-tn-clock="none" data-i18n="tn.clocks.none">No clock</button>
+              <button data-tn-clock="3+2">3 | 2</button>
+              <button data-tn-clock="5+3">5 | 3</button>
+              <button data-tn-clock="10">10 min</button>
+              <button data-tn-clock="15+10">15 | 10</button>
+            </div>
+            <small class="tn-hint" data-i18n="tn.clockHint"></small>
+          </div>
+          <div class="setting">
+            <span data-i18n="tn.colours">Colours</span>
+            <small class="tn-hint" data-i18n="tn.coloursHint"></small>
+          </div>
+          <label class="switch tn-switch"><input id="tnFlip" type="checkbox" checked> <span data-i18n="tn.flip">Turn the board for the player to move</span></label>
+          <div id="tnEndRow" class="setting" hidden>
+            <span data-i18n="tn.endTitle">The tournament ends after</span>
+            <div class="segmented tn-seg" role="group">
+              <button data-tn-end="games:6" data-i18n="tn.ends.g6">6 games</button>
+              <button data-tn-end="games:10" data-i18n="tn.ends.g10">10 games</button>
+              <button data-tn-end="games:15" data-i18n="tn.ends.g15">15 games</button>
+              <button data-tn-end="time:30" data-i18n="tn.ends.t30">30 min</button>
+              <button data-tn-end="time:45" data-i18n="tn.ends.t45">45 min</button>
+              <button data-tn-end="time:60" data-i18n="tn.ends.t60">60 min</button>
+            </div>
+            <small class="tn-hint" data-i18n="tn.endHint"></small>
+          </div>
+        </div>
+        <button id="tnGo" class="big primary rk-play tn-go"><span aria-hidden="true">&#9654;</span> <span data-i18n="tn.play">PLAY</span></button>
+        <div class="tn-nav"><button id="tnSettingsBack" class="big secondary"><span aria-hidden="true">&#8592;</span> <span data-i18n="tn.back">Back</span></button><span></span></div>
+      </div>
+
+      <div id="tnPlay" class="tn-screen" hidden>
+        <div class="tn-play-head">
+          <div><h2 id="tnTitle" class="tn-title"></h2><p id="tnProgress" class="tn-progress"></p></div>
+          <div id="tnTopButtons" class="tn-top-buttons">
+            <button id="tnStandingsOpen" class="tn-small"><span aria-hidden="true">&#128202;</span> <span data-i18n="tn.standings">Standings</span></button>
+            <button id="tnEnd" class="tn-small danger"><span aria-hidden="true">&#9209;</span> <span data-i18n="tn.endTournament">End tournament</span></button>
+          </div>
+        </div>
+
+        <div id="tnNext" class="tn-card tn-next">
+          <h3 class="tn-card-title" data-i18n="tn.nextGame">Next game</h3>
+          <p id="tnNextLabel" class="tn-label"></p>
+          <div id="tnNextPlayers" class="tn-next-players"></div>
+          <p id="tnNextNote" class="tn-next-note" hidden></p>
+          <button id="tnStart" class="big primary rk-play"><span aria-hidden="true">&#9654;</span> <span data-i18n="tn.startGame">Start game</span></button>
+        </div>
+
+        <div id="tnToss" class="tn-card tn-toss" hidden>
+          <h3 id="tnTossTitle" class="tn-card-title"></h3>
+          <p id="tnTossLabel" class="tn-label"></p>
+          <p id="tnTossText" class="tn-toss-text"></p>
+          <div id="tnTossPlayers" class="tn-toss-players"></div>
+          <div class="tn-coin-stage"><div id="tnCoin" class="tn-coin"><div id="tnCoinA" class="tn-coin-face a"></div><div id="tnCoinB" class="tn-coin-face b"></div></div></div>
+          <p id="tnTossResult" class="tn-toss-result" aria-live="polite"></p>
+          <button id="tnTossGo" class="big primary"><span aria-hidden="true">&#129689;</span> <span data-i18n="tn.toss">Toss!</span></button>
+          <button id="tnTossDone" class="big primary" hidden><span data-i18n="tn.continue">Continue</span> <span aria-hidden="true">&#8594;</span></button>
+        </div>
+
+        <div id="tnGame" hidden>
+          <p id="tnGameLabel" class="rk-game-tc"></p>
+          <div id="tnBarTop" class="rk-clock tn-bar"><span class="tn-bar-who"></span><span class="rk-time">0:00</span></div>
+          <div class="board-wrap">
+            <div id="tnBoard" class="board"></div>
+            <div id="tnBadge" class="badge" hidden></div>
+            <div id="tnPromo" class="promo" hidden>
+              <div class="promo-backdrop"></div>
+              <div class="promo-card" role="dialog">
+                <button class="promo-btn" data-promo="q"><span class="cg-wrap promo-icon"><piece class="queen"></piece></span><span data-i18n="queen">Queen</span></button>
+                <button class="promo-btn" data-promo="r"><span class="cg-wrap promo-icon"><piece class="rook"></piece></span><span data-i18n="rook">Rook</span></button>
+                <button class="promo-btn" data-promo="b"><span class="cg-wrap promo-icon"><piece class="bishop"></piece></span><span data-i18n="bishop">Bishop</span></button>
+                <button class="promo-btn" data-promo="n"><span class="cg-wrap promo-icon"><piece class="knight"></piece></span><span data-i18n="knight">Knight</span></button>
+              </div>
+            </div>
+          </div>
+          <div id="tnBarBottom" class="rk-clock tn-bar"><span class="tn-bar-who"></span><span class="rk-time">0:00</span></div>
+          <p id="tnStatus" class="status"></p>
+          <div id="tnPause" class="pause-bar tn-pause" hidden role="alertdialog" aria-labelledby="tnPauseText">
+            <div class="pause-head">
+              <img id="tnPauseImg" class="pause-avatar" alt="">
+              <p id="tnPauseText" class="pause-text" aria-live="polite"></p>
+            </div>
+            <div class="pause-buttons">
+              <button id="tnTryAgain" class="big primary"><span aria-hidden="true">&#8630;</span> <span data-i18n="tryAgain">Try again</span></button>
+              <button id="tnKeepPlaying" class="big secondary"><span aria-hidden="true">&#9654;</span> <span data-i18n="keepPlaying">Keep playing</span></button>
+              <button id="tnShowBetter" class="big secondary"><span data-i18n="showBetter">Show a better move</span></button>
+            </div>
+          </div>
+          <div id="tnCoach" class="tn-coach" hidden aria-live="polite"><img id="tnCoachImg" alt=""><p id="tnCoachText"></p></div>
+          <ul id="tnLegend" class="legend tn-legend" hidden>
+            <li id="tnLegendRed"><span class="swatch red"></span><span data-i18n="legendDanger">a piece that can be captured</span></li>
+            <li id="tnLegendRedCircle"><span class="swatch round red-ring"></span><span data-i18n="legendDangerCircle">your piece in danger</span></li>
+            <li id="tnLegendGreen"><span class="swatch green"></span><span data-i18n="legendBest">best move</span></li>
+          </ul>
+          <div class="hint-row tn-game-buttons">
+            <button id="tnShowBest" class="hint-btn" hidden><span aria-hidden="true">&#128161;</span> <span data-i18n="showBest">Show best moves</span></button>
+            <button id="tnDraw" class="hint-btn undo-btn"><span aria-hidden="true">&#129309;</span> <span data-i18n="tn.offerDraw">Offer draw</span></button>
+            <button id="tnResign" class="hint-btn undo-btn"><span aria-hidden="true">&#9873;</span> <span data-i18n="tn.resign">Resign</span></button>
+          </div>
+        </div>
+
+        <div id="tnResult" class="tn-card tn-result" hidden>
+          <h3 id="tnResultTitle" class="tn-result-title"></h3>
+          <p id="tnResultReason" class="rk-end-reason"></p>
+          <div id="tnResultFaces"></div>
+          <button id="tnResultNext" class="big primary rk-play"><span aria-hidden="true">&#9654;</span> <span data-i18n="tn.nextGame">Next game</span></button>
+          <div id="tnResultStandings"></div>
+        </div>
+
+        <div id="tnPodium" class="tn-card tn-podium" hidden>
+          <h3 class="tn-card-title" data-i18n="tn.podiumTitle">The winners</h3>
+          <p id="tnChampion" class="tn-champion"></p>
+          <div id="tnPodiumSteps" class="tn-podium-steps"></div>
+          <div class="tn-podium-buttons">
+            <button id="tnAgain" class="big primary"><span aria-hidden="true">&#8635;</span> <span data-i18n="tn.again">Play again with same players</span></button>
+            <button id="tnNew" class="big secondary"><span aria-hidden="true">&#10024;</span> <span data-i18n="tn.newTournament">New tournament</span></button>
+          </div>
+          <h3 class="tn-st-title" data-i18n="tn.finalTable">Final table</h3>
+          <div id="tnFinalTable"></div>
+        </div>
+      </div>
+    </section>
+
     <aside class="side">
       <div class="coach">
         <div class="coach-side">
@@ -475,7 +635,7 @@
   </main>
 
   <footer>
-    <span data-i18n="footer">Free for everyone. Only Ranked progress and your last 5 Ranked games are kept on this device, and nothing is sent anywhere.</span>
+    <span data-i18n="footer">Free for everyone. Only Ranked progress, your last 5 Ranked games and a tournament in progress (until it ends) are kept on this device, and nothing is sent anywhere.</span>
     <a href="./CREDITS.md" data-i18n="credits">Credits and licences</a>
   </footer>
 
@@ -514,6 +674,44 @@
         <button id="themeClose" class="picker-close">✕</button>
       </div>
       <div id="themeCards" class="theme-cards"></div>
+    </div>
+  </div>
+
+  <div id="tnEditor" class="picker" hidden>
+    <div id="tnEditorBackdrop" class="picker-backdrop"></div>
+    <form id="tnEditorForm" class="picker-card tn-editor" role="dialog" aria-labelledby="tnEditorTitle" novalidate>
+      <h2 id="tnEditorTitle" class="tn-editor-title"></h2>
+      <label class="tn-field"><span data-i18n="tn.name">Name</span>
+        <input id="tnName" type="text" maxlength="12" autocomplete="off" autocapitalize="words" spellcheck="false">
+      </label>
+      <p id="tnNameError" class="tn-error" aria-live="polite"></p>
+      <p class="tn-field-title" data-i18n="tn.picture">Picture</p>
+      <div id="tnAvatars" class="tn-avatars"></div>
+      <p class="tn-field-title" data-i18n="tn.helpLevel">Help level</p>
+      <div id="tnHelpCards" class="tn-help-cards"></div>
+      <div class="rk-confirm-buttons">
+        <button type="submit" class="big primary" data-i18n="tn.save">Save</button>
+        <button id="tnEditorCancel" type="button" class="big secondary" data-i18n="tn.cancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="tnStandingsBox" class="picker" hidden>
+    <div id="tnStandingsBackdrop" class="picker-backdrop"></div>
+    <div class="picker-card tn-standings-card" role="dialog" aria-labelledby="tnStandingsTitle">
+      <div class="tn-standings-head"><h2 id="tnStandingsTitle" data-i18n="tn.standings">Standings</h2><button id="tnStandingsClose" class="picker-close" aria-label="Close">&#10005;</button></div>
+      <div id="tnStandingsBody"></div>
+    </div>
+  </div>
+
+  <div id="tnAsk" class="picker" hidden>
+    <div id="tnAskBackdrop" class="picker-backdrop"></div>
+    <div class="picker-card rk-confirm-card" role="alertdialog" aria-labelledby="tnAskText">
+      <p id="tnAskText" class="rk-confirm-text"></p>
+      <div class="rk-confirm-buttons">
+        <button id="tnAskYes" class="big primary"></button>
+        <button id="tnAskNo" class="big secondary"></button>
+      </div>
     </div>
   </div>
 

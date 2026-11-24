@@ -1,7 +1,7 @@
 // Service worker: keeps the page's own files so Chess for All opens without internet after the
 // first visit. It stores only these files (no user data) and never contacts any other address.
 // After changing any file of the site, raise VERSION so devices pick up the new files.
-const VERSION = 'chess-for-all-v14';
+const VERSION = 'chess-for-all-v15';
 
 const FILES = [
   './',
@@ -228,6 +228,8 @@ const FILES = [
   './style.css',
   './themes.css',
   './themes.js',
+  './tournament-rules.js',
+  './tournament.js',
   './vendor/chess.js/chess.js',
   './vendor/chessground/anim.js',
   './vendor/chessground/api.js',
