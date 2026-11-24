@@ -10,6 +10,7 @@ import { OPPONENTS, DEFAULT_OPPONENT, OPPONENT_MOODS, opponentById, opponentImag
 import { createRush } from './rush.js';
 import { createRanked } from './ranked.js';
 import { createTournamentMode } from './tournament.js';
+import { createReview } from './review.js';
 import { play as playSound, playMove, setMuted as setSoundMuted } from './sounds.js';
 import { confetti } from './confetti.js';
 import { openingsReady, openingOf, openingFamily } from './openings.js';
@@ -38,6 +39,7 @@ let gameActive = false;
 let gameOver = false; // finished by mate or draw; Undo can bring it back to life
 let busy = false;
 let gamesStarted = 0;
+let playReviewing = false; // the finished game is being reviewed (the review shows instead of the board)
 
 // Texts from i18n.js; "pzLevels.easy" reads a nested text.
 const t = (key) => key.split('.').reduce((o, k) => o?.[k], STRINGS[LANG]);
@@ -496,6 +498,12 @@ function refreshStatus() {
   refreshHintButton();
   refreshShowBest();
   refreshUndoButton();
+  refreshReviewButton();
+}
+
+// "Review game" once a game is over, until the next one starts (nothing is kept).
+function refreshReviewButton() {
+  $('reviewGame').hidden = !(engineOk === true && !gameActive && endText && chess.history().length > 0);
 }
 
 // ---------- Opening book ----------
@@ -1105,7 +1113,7 @@ async function onUserMove(orig, dest) {
   else warnedAbout = new Set();
 
   // The computer's answer is worked out while the child reads (it is thrown away on "Try again").
-  const answer = opponentMove(r.fenAfter, opponent, uciLine()).catch(() => null);
+  const answer = computerAnswer(r.fenAfter).catch(() => null);
 
   if (pauses) {
     const choice = await pauseForMistake(r.moment, comment, gentle);
@@ -1344,12 +1352,19 @@ $('flipToggle').addEventListener('change', () => {
   if (vsFriend && !busy) turnBoard();
 });
 
+// The computer's move. Automated tests can give it its next moves instead (scriptedForTests).
+let scriptedForTests = [];
+function computerAnswer(fen) {
+  if (scriptedForTests.length) return Promise.resolve(scriptedForTests.shift());
+  return opponentMove(fen, opponent, uciLine());
+}
+
 async function computerStarts() {
   const id = gameId;
   busy = true;
   syncBoard();
   refreshOpponentFace();
-  const [uci] = await Promise.all([opponentMove(chess.fen(), opponent, uciLine()), sleep(400)]);
+  const [uci] = await Promise.all([computerAnswer(chess.fen()), sleep(400)]);
   if (id !== gameId) return;
   const mv = applyComputerMove(uci);
   busy = false;
@@ -1399,6 +1414,8 @@ async function endGame(over, delay = false) {
 
 function newGame() {
   if (!engineOk) return;
+  if (review.owner === 'play') review.close();
+  playReviewing = false;
   gameId += 1;
   gameOver = false;
   endPause('abort');
@@ -1486,11 +1503,60 @@ const learn = createLearn({
   play: () => setMode('play'),
 });
 
+// The game review screen, shared by Ranked, Play and Tournament (review.js).
+const review = createReview({ t });
+
 // Ranked: the tower in each time control (its progress is the only thing kept on the device).
-const ranked = createRanked({ t });
+const ranked = createRanked({ t, review });
 
 // Tournament: 3–8 players on one device, each with their own help level (kept only until it ends).
-const tournament = createTournamentMode({ t, coach: () => coach, speak });
+const tournament = createTournamentMode({ t, coach: () => coach, speak, review });
+
+// ---------- Review of the game just played in the Play tab (nothing is kept) ----------
+
+// The review takes the place of the board and the side panel; Back brings the game back.
+function refreshPlayLayout() {
+  const play = mode === 'play';
+  $('playView').hidden = !play || playReviewing;
+  $('playReviewHost').hidden = !(play && playReviewing);
+  document.querySelector('main').classList.toggle('ranked-on', mode === 'ranked' || mode === 'tournament' || (play && playReviewing));
+  if (play && !playReviewing) cg.redrawAll();
+}
+
+$('reviewGame').addEventListener('click', async () => {
+  if ($('reviewGame').hidden) return;
+  const id = gameId;
+  const moves = uciLine();
+  let colour = playerColour;
+  let sides = null;
+  if (vsFriend) {
+    // Two players: whose moves? (the other one is a tap away on the review screen)
+    const count = (c) => chess.history({ verbose: true }).filter((m) => m.color === c).length;
+    sides = { w: { name: t('white'), disabled: !count('w') }, b: { name: t('black'), disabled: !count('b') } };
+    colour = await review.chooseSide(sides);
+    if (!colour || id !== gameId || gameActive) return;
+  }
+  const about = [
+    t('modePlay'),
+    vsFriend ? t('rvTwoPlayers') : t('rvAgainst').replace('{name}', opponentName(opponent)),
+    t(endText),
+  ].join(' · ');
+  playReviewing = true;
+  refreshPlayLayout();
+  review.open({ moves, colour, result: endText }, {
+    owner: 'play',
+    host: $('playReviewHost'),
+    about,
+    backLabel: t('rvBackGame'),
+    sides,
+    otherName: vsFriend ? null : opponentName(opponent),
+    onBack: () => {
+      playReviewing = false;
+      refreshPlayLayout();
+    },
+    onTakenAway: () => { playReviewing = false; },
+  });
+});
 
 // Switching keeps the game exactly as it is; it carries on when the player comes back.
 function setMode(m) {
@@ -1507,7 +1573,8 @@ function setMode(m) {
   const rk = mode === 'ranked';
   const tn = mode === 'tournament';
   document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
-  $('playView').hidden = !play;
+  $('playView').hidden = !play || playReviewing;
+  $('playReviewHost').hidden = !(play && playReviewing);
   $('playControls').hidden = !play;
   $('messages').hidden = !play;
   $('puzzleView').hidden = !pz || pzMode === 'rush';
@@ -1519,16 +1586,18 @@ function setMode(m) {
   // Ranked has no coach: the side panel goes away and the mode uses the whole width.
   $('rankedView').hidden = !rk;
   $('tournamentView').hidden = !tn;
-  document.querySelector('main').classList.toggle('ranked-on', rk || tn);
+  document.querySelector('main').classList.toggle('ranked-on', rk || tn || (play && playReviewing));
   clearReaction();
   if (!pz) rush.hide();
   if (!rk) ranked.hide();
   if (!tn) tournament.hide();
+  if (!play) review.hide('play');
   if (pz && pzMode === 'rush') rush.show();
   else if (pz) puzzles.show();
   else if (ln) learn.show();
   else if (rk) ranked.show();
   else if (tn) tournament.show();
+  else if (playReviewing) review.show('play');
   else cg.redrawAll();
 }
 
@@ -1581,5 +1650,9 @@ window.chessForAll = {
   get ranked() { return ranked.state; },
   rankedClocksForTests: (w, b) => ranked.setClocksForTests(w, b),
   get tournament() { return tournament.state; },
+  get review() { return review.state; },
+  get playReviewing() { return playReviewing; },
+  // For automated tests only: the computer's next moves in the Play tab (UCI).
+  computerMovesForTests: (list) => { scriptedForTests = list.slice(); },
   tournamentForTests: tournament.forTests,
 };

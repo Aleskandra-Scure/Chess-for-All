@@ -50,9 +50,9 @@ function removeSaved() {
   } catch { /* nothing kept anyway */ }
 }
 
-// ctx: { t, coach(), speak(text) }
+// ctx: { t, coach(), speak(text), review } (review: the game review screen, review.js)
 export function createTournamentMode(ctx) {
-  const { t } = ctx;
+  const { t, review } = ctx;
   const T_ = (key) => t(`tn.${key}`);
   const fill = (text, vars) => String(text).replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
 
@@ -80,6 +80,7 @@ export function createTournamentMode(ctx) {
   let dangerShapes = [];
   let pauseShapes = [];
   let lastToss = null;
+  let reviewing = false; // the game just played is being reviewed (nothing is kept, results do not change)
 
   const playerById = (id) => (T?.players || players).find((p) => p.id === id);
   const helpOf = (side) => playerById(current?.[side === 'w' ? 'white' : 'black'])?.help ?? 0;
@@ -417,6 +418,7 @@ export function createTournamentMode(ctx) {
   }
 
   function goNext() {
+    closeReview();
     current = R.nextGame(T);
     G = null;
     save();
@@ -1064,9 +1066,56 @@ export function createTournamentMode(ctx) {
     // Is there another game (or toss) to come? Worked out on a copy, so nothing changes yet.
     const more = !T.finished && R.nextGame(structuredClone(T)) !== null;
     $('tnResultNext').querySelector('span:last-child').textContent = T_(more ? 'nextGame' : 'seeResults');
+    $('tnReview').hidden = !G.moves.length;
     $('tnResultNext').focus({ preventScroll: true });
   }
   $('tnResultNext').addEventListener('click', () => goNext());
+
+  // ---------- Review of the game just played (only until the next game; nothing is kept) ----------
+
+  $('tnReview').addEventListener('click', async () => {
+    if (!current || !G || !G.over || !G.moves.length) return;
+    const g = current;
+    const moves = G.moves.slice(); // the moves that stayed on the board (not the ones taken back)
+    const count = (c) => moves.filter((_, i) => (i % 2 === 0) === (c === 'w')).length;
+    const side = (id, c) => ({
+      name: nameOf(id),
+      img: avatarById(playerById(id).avatar).src('neutral'),
+      sub: t(colourName(c)),
+      disabled: !count(c),
+    });
+    const sides = { w: side(g.white, 'w'), b: side(g.black, 'b') };
+    const colour = await review.chooseSide(sides);
+    if (!colour || current !== g || sub !== 'result') return;
+    const about = [T_('formats')[T.format].name, gameLabel(g), `${nameOf(g.white)} – ${nameOf(g.black)}`, $('tnResultTitle').textContent].join(' · ');
+    reviewing = true;
+    $('tnSteps').hidden = true;
+    $('tnPlay').hidden = true;
+    review.open({ moves, colour, result: g.result }, {
+      owner: 'tournament',
+      host: $('tournamentView'),
+      about,
+      backLabel: T_('backResults'),
+      note: t('rvNoChangeResults'),
+      sides,
+      onBack: () => leaveReview(),
+      onTakenAway: () => leaveReview(false),
+    });
+  });
+
+  // Back to the result with the table or the bracket, and the next game.
+  function leaveReview(render = true) {
+    reviewing = false;
+    $('tnSteps').hidden = false;
+    $('tnPlay').hidden = screen !== 'play';
+    if (render && visible) window.scrollTo(0, 0);
+  }
+
+  function closeReview() {
+    if (review.owner === 'tournament') review.close();
+    if (reviewing) leaveReview(false);
+    $('rkReview').hidden = review.owner ? $('rkReview').hidden : true;
+  }
 
   // ---------- Standings: tables and the bracket ----------
 
@@ -1206,6 +1255,7 @@ export function createTournamentMode(ctx) {
   });
 
   function endTournament() {
+    closeReview();
     seq += 1;
     stopClock();
     endPause('abort');
@@ -1323,6 +1373,10 @@ export function createTournamentMode(ctx) {
   return {
     show() {
       visible = true;
+      if (reviewing) {
+        review.show('tournament');
+        return;
+      }
       showScreen(screen);
       if (screen === 'play') {
         refreshHeader();
@@ -1343,10 +1397,11 @@ export function createTournamentMode(ctx) {
       save();
       stopClock();
       countTime();
+      review.hide('tournament');
     },
     get state() {
       return {
-        screen, sub, format, storageOk,
+        screen, sub, format, storageOk, reviewing,
         players: players.map((p) => ({ ...p })),
         settings: structuredClone(settings),
         tournament: T ? {

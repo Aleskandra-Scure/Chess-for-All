@@ -89,6 +89,9 @@
       <p id="evalText" class="eval-text" hidden></p>
       <p id="status" class="status"></p>
       <p id="opening" class="opening" hidden></p>
+      <div class="hint-row review-row">
+        <button id="reviewGame" class="big primary review-game-btn" hidden><span aria-hidden="true">&#128269;</span> <span data-i18n="rankedReviewGame">Review game</span></button>
+      </div>
       <div class="hint-row">
         <button id="hint" class="hint-btn"><span aria-hidden="true">💡</span> <span id="hintLabel" data-i18n="hint">Hint</span></button>
         <button id="showBest" class="hint-btn best-btn" hidden><span aria-hidden="true">⭐</span> <span data-i18n="showBest">Show best moves</span></button>
@@ -113,6 +116,8 @@
         <li data-kind="save"><span class="swatch yellow round"></span><span data-i18n="legendSave">what it saves</span></li>
       </ul>
     </section>
+
+    <div id="playReviewHost" class="play play-review-host" hidden></div>
 
     <section id="puzzleView" class="play puzzle-view" hidden>
       <div class="board-wrap">
@@ -335,10 +340,14 @@
         <button id="rvBack" class="rv-back"><span aria-hidden="true">&#8592;</span> <span data-i18n="rankedBackTower">Back to the tower</span></button>
         <h2 class="rk-title" data-i18n="rvTitle">Game review</h2>
         <p id="rvAbout" class="rk-lead"></p>
+        <div id="rvWho" class="rv-who" hidden>
+          <span id="rvWhoPic" class="rv-who-pic"></span><strong id="rvWhoText"></strong>
+          <button id="rvSwitch" class="tn-small rv-switch" hidden><span aria-hidden="true">&#8644;</span> <span></span></button>
+        </div>
         <div id="rvWorking" class="rv-working">
           <p data-i18n="rvWorking">The computer is looking at your game…</p>
           <div id="rvProgressBar" class="rk-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="rvProgress" class="rk-bar-fill rv-progress"></div></div>
-          <p class="rk-note" data-i18n="rvNoChange"></p>
+          <p id="rvNote" class="rk-note"></p>
         </div>
         <p id="rvFailed" class="rk-note warn" data-i18n="rvFailed" hidden></p>
         <div id="rvDone" hidden>
@@ -348,7 +357,7 @@
           <div class="rv-chart-box">
             <span class="rv-chart-label up" data-i18n="rvChartUp">Better for you</span>
             <svg id="rvChart" class="rv-chart" role="img" aria-label="How the game went"></svg>
-            <span class="rv-chart-label down" data-i18n="rvChartDown">Better for the computer</span>
+            <span id="rvChartDown" class="rv-chart-label down" data-i18n="rvChartDown">Better for the computer</span>
           </div>
           <div class="rv-layout">
             <div class="rv-main">
@@ -525,6 +534,7 @@
           <p id="tnResultReason" class="rk-end-reason"></p>
           <div id="tnResultFaces"></div>
           <button id="tnResultNext" class="big primary rk-play"><span aria-hidden="true">&#9654;</span> <span data-i18n="tn.nextGame">Next game</span></button>
+          <button id="tnReview" class="big secondary"><span aria-hidden="true">&#128269;</span> <span data-i18n="rankedReviewGame">Review game</span></button>
           <div id="tnResultStandings"></div>
         </div>
 
@@ -674,6 +684,16 @@
         <button id="themeClose" class="picker-close">✕</button>
       </div>
       <div id="themeCards" class="theme-cards"></div>
+    </div>
+  </div>
+
+  <div id="rvWhose" class="picker" hidden>
+    <div id="rvWhoseBackdrop" class="picker-backdrop"></div>
+    <div class="picker-card rk-confirm-card rv-whose-card" role="dialog" aria-labelledby="rvWhoseTitle">
+      <h2 id="rvWhoseTitle" class="rv-whose-title" data-i18n="rvWhose">Whose game?</h2>
+      <p class="rv-whose-lead" data-i18n="rvWhoseLead"></p>
+      <div id="rvWhoseButtons" class="rv-whose-buttons"></div>
+      <button id="rvWhoseCancel" class="big secondary rv-whose-cancel" data-i18n="rankedCancel">Cancel</button>
     </div>
   </div>
 

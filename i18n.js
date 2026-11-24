@@ -936,6 +936,17 @@ export const STRINGS = {
     rvChecking: 'Let’s see…',
     rvTryRight: 'Well found!',
     rvTheAnswer: 'The answer is {san}.',
+    // Game review after a game in Play or in a tournament (nothing is kept)
+    rvWhose: 'Whose game?',
+    rvWhoseLead: 'Choose whose moves to look at. You can switch to the other player on the review screen.',
+    rvMovesOf: '{name}’s moves',
+    rvSwitch: 'Review {name}’s moves',
+    rvOtherMove: '{name} played {san}.',
+    rvChartDownName: 'Better for {name}',
+    rvAgainst: 'Against {name}',
+    rvTwoPlayers: 'Two players',
+    rvBackGame: 'Back to the game',
+    rvNoChangeResults: 'A review never changes the results of the tournament.',
 
     // Tournament: 3–8 players on one device (tournament.js)
     tn: {
@@ -1105,6 +1116,7 @@ export const STRINGS = {
       finalTable: 'Final table',
       again: 'Play again with same players',
       newTournament: 'New tournament',
+      backResults: 'Back to the results',
       savedAsk: 'There is a tournament in progress ({format}, {n} players). Do you want to continue it, or end it?',
       continueTournament: 'Continue tournament',
       endIt: 'End it',

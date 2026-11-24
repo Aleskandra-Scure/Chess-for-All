@@ -1,9 +1,14 @@
-// Game review for Ranked: Stockfish (in the browser, the same engine as the rest of the app) looks at
-// every position of a finished game. The player's moves get the same marks as in the Play tab
-// (!!, !, ?!, ?, ??, 📖), there is a chart of the advantage, the 2–3 biggest mistakes are the key
-// moments (with the better move, the threat and a short explanation from the coach's sentences), and
-// each key moment can be tried again like a puzzle. No AI. Nothing is sent anywhere, and the review
-// never changes the player's progress in Ranked; only the "reviewed" mark of the game is kept.
+// Game review, shared by Ranked, Play and Tournament: Stockfish (in the browser, the same engine as
+// the rest of the app) looks at every position of a finished game once. The reviewed player's moves
+// get the same marks as in the Play tab (!!, !, ?!, ?, ??, 📖), there is a chart of the advantage,
+// the 2–3 biggest mistakes are the key moments (with the better move, the threat and a short
+// explanation from the coach's sentences), and each key moment can be tried again like a puzzle.
+// After a game between two people the review can switch to the other player at once, without
+// asking the engine again. No AI. Nothing is sent anywhere; a review never changes a result or the
+// progress in Ranked (only the "reviewed" mark of a Ranked game is kept, by ranked.js).
+//
+// One review screen (#rkReview) is moved into the tab that opens it (`host`); the tab that had it
+// before is told with `onTakenAway`.
 import { Chessground } from './vendor/chessground/chessground.js';
 import { Chess } from './vendor/chess.js/chess.js';
 import { engineReady, reviewSearch, gradeMove, moveFacts, gameOverInfo, uciToMove, uciOf } from './analysis.js';
@@ -39,12 +44,18 @@ const RIGHT = 8; // a move in "Try again" is right when it loses less than this 
 const cache = new Map();
 const MAX_CACHE = 3000;
 
-// ctx: { t, onBack(), onReviewed(entry) }
+// ctx: { t }
 export function createReview(ctx) {
   const { t } = ctx;
   const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
 
-  let entry = null; // the game: { moves, colour, result, floor, at, reviewed, tc }
+  let entry = null; // the game: { moves, colour (the reviewed side), result, ... }
+  // How the tab that opened the review wants it: { owner, host, about, backLabel, note, onBack,
+  // onTakenAway, onReviewed, sides: { w: { name, img }, b: { … } } (two people) | null, otherName }
+  let opts = {};
+  let owner = null; // 'ranked', 'play' or 'tournament'
+  let base = null; // the engine's work on the game: { fens, moves, overs, evals } (done once)
+  let whoseResolve = null;
   let state = 'idle'; // 'working', 'paused' (left during the work), 'done' or 'failed'
   let token = 0; // a new number stops an older piece of work
   let fens = [];
@@ -64,9 +75,21 @@ export function createReview(ctx) {
 
   // ---------- Opening and leaving ----------
 
-  function open(e, about) {
+  function open(e, o) {
+    // Another tab had the review: it is told, so it shows its own screen again next time.
+    const lost = owner && owner !== o.owner ? opts.onTakenAway : null;
+    close();
+    lost?.();
     entry = e;
-    $('rvAbout').textContent = about;
+    opts = o;
+    owner = o.owner;
+    base = null;
+    o.host.append($('rkReview'));
+    $('rkReview').hidden = false;
+    $('rvAbout').textContent = o.about;
+    $('rvBack').querySelector('span:last-child').textContent = o.backLabel;
+    $('rvNote').textContent = o.note || '';
+    $('rvNote').hidden = !o.note;
     $('rvDone').hidden = true;
     $('rvFailed').hidden = true;
     $('rvWorking').hidden = false;
@@ -84,9 +107,9 @@ export function createReview(ctx) {
       if (my !== token || !ok) return;
       state = 'done';
       ready();
-      if (!entry.reviewed) {
+      if (opts.onReviewed && !entry.reviewed) {
         entry.reviewed = true;
-        ctx.onReviewed?.(entry);
+        opts.onReviewed(entry);
       }
     }).catch(() => {
       if (my !== token) return;
@@ -97,7 +120,9 @@ export function createReview(ctx) {
   }
 
   // Leaving the screen stops the work; coming back carries on (positions already done are remembered).
-  function hide() {
+  // `who`: only when that tab has the review.
+  function hide(who) {
+    if (who && who !== owner) return;
     visible = false;
     clearTimeout(tryTimer);
     if (state === 'working') {
@@ -106,7 +131,9 @@ export function createReview(ctx) {
     }
   }
 
-  function show() {
+  function show(who) {
+    if (who && who !== owner) return;
+    $('rkReview').hidden = false;
     visible = true;
     if (state === 'paused') start();
     else if (state === 'done') {
@@ -120,11 +147,14 @@ export function createReview(ctx) {
     hide();
     entry = null;
     state = 'idle';
+    owner = null;
+    base = null;
   }
 
   $('rvBack').addEventListener('click', () => {
+    const back = opts.onBack;
     close();
-    ctx.onBack();
+    back?.();
   });
 
   function setProgress(share) {
@@ -139,8 +169,18 @@ export function createReview(ctx) {
     await engineReady;
     await openingsReady.catch(() => {});
     if (my !== token) return false;
+    if (!base) {
+      const b = await analyseGame(my);
+      if (!b) return false;
+      base = b;
+    }
+    build();
+    return true;
+  }
+
+  async function analyseGame(my) {
     const c = new Chess();
-    fens = [c.fen()];
+    const fens = [c.fen()];
     const moves = [];
     const overs = [null];
     for (const u of entry.moves) {
@@ -181,7 +221,13 @@ export function createReview(ctx) {
       }
       setProgress((i + 1) / n);
     }
+    return { fens, moves, overs, evals };
+  }
 
+  // Marks, chart and key moments for the reviewed side (entry.colour), from the engine's work.
+  function build() {
+    const { moves, overs, evals } = base;
+    fens = base.fens;
     plies = moves.map((mv, i) => {
       const uci = uciOf(mv);
       const mine = mv.color === entry.colour;
@@ -214,8 +260,88 @@ export function createReview(ctx) {
     const big = mineWeak.filter((p) => p.category !== 'inaccuracy').slice(0, 3);
     const extra = mineWeak.filter((p) => p.category === 'inaccuracy').slice(0, Math.max(0, 2 - big.length));
     keys = [...big, ...extra].map((p) => p.index).sort((a, b) => a - b);
-    return true;
   }
+
+  // ---------- Whose moves: two people played ----------
+
+  const nameOf = (colour) => (opts.sides ? opts.sides[colour].name : colour === entry?.colour ? '' : opts.otherName || '');
+
+  function renderWho() {
+    const sides = opts.sides;
+    $('rvWho').hidden = !sides;
+    $('rvSwitch').hidden = !sides;
+    const other = entry.colour === 'w' ? 'b' : 'w';
+    if (sides) {
+      $('rvWhoText').textContent = fill(t('rvMovesOf'), { name: sides[entry.colour].name });
+      $('rvWhoPic').replaceChildren(sidePicture(entry.colour, sides[entry.colour]));
+      $('rvSwitch').querySelector('span:last-child').textContent = fill(t('rvSwitch'), { name: sides[other].name });
+    }
+    const otherName = nameOf(other);
+    $('rvChartDown').textContent = otherName ? fill(t('rvChartDownName'), { name: otherName }) : t('rvChartDown');
+  }
+
+  function sidePicture(colour, side) {
+    if (side.img) {
+      const img = document.createElement('img');
+      img.className = 'rv-who-img';
+      img.src = side.img;
+      img.alt = '';
+      return img;
+    }
+    const wrap = document.createElement('span');
+    wrap.className = 'cg-wrap rk-icon small';
+    wrap.setAttribute('aria-hidden', 'true');
+    const piece = document.createElement('piece');
+    piece.className = `${colourName(colour)} king`;
+    wrap.append(piece);
+    return wrap;
+  }
+
+  // The other player's moves: the engine's work is kept, so this is at once.
+  $('rvSwitch').addEventListener('click', () => {
+    if (state !== 'done' || !opts.sides) return;
+    endTry();
+    entry.colour = entry.colour === 'w' ? 'b' : 'w';
+    build();
+    ready();
+  });
+
+  // "Whose game?": resolves 'w' or 'b', or null when closed. sides: { w: { name, img, sub, disabled }, b }
+  function chooseSide(sides) {
+    $('rvWhoseButtons').replaceChildren(...['w', 'b'].map((c) => {
+      const b = document.createElement('button');
+      b.className = 'big secondary rv-whose-btn';
+      b.dataset.side = c;
+      b.disabled = Boolean(sides[c].disabled);
+      const name = document.createElement('strong');
+      name.textContent = sides[c].name;
+      b.append(sidePicture(c, sides[c]), name);
+      if (sides[c].sub) {
+        const sub = document.createElement('small');
+        sub.textContent = sides[c].sub;
+        b.append(sub);
+      }
+      return b;
+    }));
+    $('rvWhose').hidden = false;
+    $('rvWhoseButtons').querySelector('button:not(:disabled)')?.focus();
+    return new Promise((resolve) => { whoseResolve = resolve; });
+  }
+  function whoseAnswer(v) {
+    $('rvWhose').hidden = true;
+    const r = whoseResolve;
+    whoseResolve = null;
+    r?.(v);
+  }
+  $('rvWhoseButtons').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-side]');
+    if (b && !b.disabled) whoseAnswer(b.dataset.side);
+  });
+  $('rvWhoseCancel').addEventListener('click', () => whoseAnswer(null));
+  $('rvWhoseBackdrop').addEventListener('click', () => whoseAnswer(null));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$('rvWhose').hidden) whoseAnswer(null);
+  });
 
   // ---------- The finished review ----------
 
@@ -226,6 +352,7 @@ export function createReview(ctx) {
     renderSummary();
     // "No big mistakes" also when the key moments are only "not quite" (?!) moves.
     $('rvNoKey').hidden = keys.some((k) => plies[k].category !== 'inaccuracy');
+    renderWho();
     renderMoves();
     renderChart();
     goTo(keys.length ? keys[0] + 1 : 0, false);
@@ -424,7 +551,10 @@ export function createReview(ctx) {
   // What happened in a move, in the coach's words (sentences from i18n.js, no AI).
   function explain(p, key) {
     if (!p) return t('rvStart');
-    if (!p.mine) return fill(t('rvComputerMove'), { san: p.san });
+    if (!p.mine) {
+      const name = nameOf(p.colour);
+      return name ? fill(t('rvOtherMove'), { name, san: p.san }) : fill(t('rvComputerMove'), { san: p.san });
+    }
     let text = `${fill(t('rvYouPlayed'), { san: p.san })} ${t('rvGrade')[p.category] || ''}`.trim();
     if (WEAK.has(p.category) && p.best && p.best !== p.uci) {
       const best = moveFacts(p.fenBefore, p.best);
@@ -605,8 +735,12 @@ export function createReview(ctx) {
     hide,
     show,
     close,
+    chooseSide,
+    get owner() { return owner; },
     get state() {
       return {
+        owner,
+        colour: entry?.colour || null,
         state,
         at,
         moves: plies.length,

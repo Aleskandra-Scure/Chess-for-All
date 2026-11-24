@@ -1045,3 +1045,26 @@ button.rk-play { flex: none; min-height: 64px; font-size: 1.4rem; }
 @media (max-width: 370px) {
   .mode button { font-size: 0.66rem; letter-spacing: -0.01em; }
 }
+
+/* ---------- Game review after a game in Play or in a tournament ---------- */
+.review-row { margin-top: 6px; }
+.review-row:has(> [hidden]:only-child) { display: none; }
+.review-game-btn { flex: 0 1 320px; min-height: 52px; }
+.play-review-host[hidden] { display: none; }
+.rv .board-wrap { max-width: max(280px, min(640px, calc(100vh - 340px))); }
+.rv-who { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin: -6px 0 12px; }
+.rv-who[hidden], .rv-switch[hidden] { display: none; }
+.rv-who-pic { display: inline-flex; }
+.rv-who-img { width: 36px; height: 36px; border-radius: 50%; background: var(--soft); }
+.rv-who strong { font-size: 1.1rem; }
+.rv-whose-card { text-align: center; }
+.rv-whose-title { margin: 0 0 4px; }
+.rv-whose-lead { margin: 0 0 14px; color: var(--muted); }
+.rv-whose-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.rv-whose-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 120px; }
+.rv-whose-btn .rv-who-img { width: 64px; height: 64px; }
+.rv-whose-btn .rk-icon.small { width: 48px; height: 48px; }
+.rv-whose-btn small { color: var(--muted); font-weight: 600; }
+.rv-whose-btn:disabled { opacity: 0.45; cursor: default; }
+.rv-whose-cancel { width: 100%; }
+.tn-result button.big { flex: none; }

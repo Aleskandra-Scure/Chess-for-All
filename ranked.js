@@ -11,7 +11,6 @@ import { Chess } from './vendor/chess.js/chess.js';
 import { engineReady, rankedMove, gameOverInfo } from './analysis.js';
 import { play, playMove } from './sounds.js';
 import { confetti } from './confetti.js';
-import { createReview } from './review.js';
 
 const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -155,9 +154,9 @@ export function cannotMate(chess, colour) {
 
 // ---------- The mode ----------
 
-// ctx: { t }
+// ctx: { t, review } (review: the game review screen shared with Play and Tournament, review.js)
 export function createRanked(ctx) {
-  const { t } = ctx;
+  const { t, review } = ctx;
   const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
   const rankName = (i) => `${t('rankedRanks')[FLOORS[i].rank]} ${FLOORS[i].stage}`;
   const tcName = (tc) => t('rankedTc')[tc.id].name;
@@ -218,7 +217,8 @@ export function createRanked(ctx) {
     $('rkPick').hidden = s !== 'pick';
     $('rkTowerScreen').hidden = s !== 'tower';
     $('rkGame').hidden = s !== 'game';
-    $('rkReview').hidden = s !== 'review';
+    // The review screen is shared: only hide it when Ranked has it.
+    if (!review.owner || review.owner === 'ranked') $('rkReview').hidden = s !== 'review';
     if (s === 'game') ensureBoard();
   }
 
@@ -404,12 +404,6 @@ export function createRanked(ctx) {
 
   // ---------- Screen 4: the game review ----------
 
-  const review = createReview({
-    t,
-    onBack: () => backToTower(),
-    onReviewed: () => store(),
-  });
-
   function openReview(h) {
     game = null;
     showScreen('review');
@@ -420,7 +414,17 @@ export function createRanked(ctx) {
       rankName(h.floor),
       when(h.at),
     ].join(' · ');
-    review.open(h, about);
+    review.open(h, {
+      owner: 'ranked',
+      host: $('rankedView'),
+      about,
+      backLabel: t('rankedBackTower'),
+      note: t('rvNoChange'),
+      onBack: () => backToTower(),
+      onReviewed: () => store(),
+      // Play or Tournament opened a review meanwhile: the tower again next time.
+      onTakenAway: () => { if (screen === 'review') screen = 'tower'; },
+    });
   }
 
   // The player's pawn walks from the old floor to the new one.
@@ -838,7 +842,7 @@ export function createRanked(ctx) {
       showScreen(screen);
       if (screen === 'pick') renderPick();
       if (screen === 'tower') renderTower();
-      if (screen === 'review') review.show();
+      if (screen === 'review') review.show('ranked');
       if (screen === 'game' && game) {
         sync();
         runClock();
@@ -849,7 +853,7 @@ export function createRanked(ctx) {
       visible = false;
       saveGame();
       stopClock();
-      review.hide();
+      review.hide('ranked');
     },
     get state() {
       const r = tc ? data[tc.id] : null;
